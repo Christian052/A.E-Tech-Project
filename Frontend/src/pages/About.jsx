@@ -1,4 +1,5 @@
 import { useSettings } from "../hooks/useSettings";
+import img from '../../public/A.E TECH 001.jpg'
 
 export default function About() {
   const { settings } = useSettings();
@@ -86,14 +87,9 @@ export default function About() {
             {/* Workshop Photo Card */}
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
               <img
-                src="/public/A.E TECH 001.png"
+                src={img}
                 alt="Technician at work on hardware repair"
-                className=" w-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src =
-                    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80";
-                }}
+                className="h-96 w-full object-cover"
               />
             </div>
 

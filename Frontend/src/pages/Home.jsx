@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { SkeletonServiceCardGrid } from "../components/Skeleton";
 import { useSettings } from "../hooks/useSettings";
+import img from '../../public/A.E TECH 001.jpg'
 
 export default function Home() {
   const { settings } = useSettings();
@@ -84,7 +85,7 @@ export default function Home() {
           {/* Hero Image Card */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-navy-700 bg-navy-800 aspect-[4/3]">
             <img
-              src="/public/A.E TECH 001.jpg"
+              src={img}
               alt="Technician repairing equipment"
               className="w-full h-full object-cover"
             />

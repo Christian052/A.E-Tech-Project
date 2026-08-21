@@ -5,7 +5,7 @@ let isConnected = false;
 async function connectDB() {
   if (isConnected) return mongoose.connection;
 
-  const uri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/aetech";
+  const uri = process.env.MONGO_URI || "mongodb+srv://Christian:Christian@2026@cluster0.wmujtnc.mongodb.net/aetech?retryWrites=true&w=majority&appName=Cluster0/aetech";
 
   mongoose.set("strictQuery", true);
 

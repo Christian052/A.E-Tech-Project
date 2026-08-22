@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "../../api/axios";
+import { getImageUrl } from "../utils/getImageUrl";
 
 const CATEGORIES = [
   "all",
@@ -15,7 +16,7 @@ const getImageUrl = (url) => {
   if (!url) return "https://placehold.co/400x300?text=No+Image";
   if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
   
-  const backendBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const backendBase = import.meta.env.VITE_API_BASE_URL || "https://a-e-tech-project.onrender.com";
   const origin = backendBase.replace(/\/api.*$/, "").replace(/\/$/, "");
   let cleanPath = url.startsWith("/") ? url : `/${url}`;
   
@@ -255,7 +256,7 @@ export default function GalleryManager({ items = [], setItems }) {
               {previewUrl ? (
                 <div className="relative h-64 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
                   <img
-                    src={previewUrl}
+                    src={getImageUrl(item.imageUrl)}
                     alt="Preview"
                     className="h-full w-full object-cover"
                   />
@@ -399,7 +400,7 @@ export default function GalleryManager({ items = [], setItems }) {
                 >
                   <div className="relative h-56 w-full bg-slate-100 overflow-hidden">
                     <img
-                      src={fullUrl}
+                      src={getImageUrl(item.imageUrl)}
                       alt={item.title || "Gallery Item"}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"

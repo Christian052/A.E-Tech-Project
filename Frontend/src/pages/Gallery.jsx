@@ -6,15 +6,26 @@ const categories = ["all", "computer-repair", "printer-repair", "networking", "c
 
 const getImageUrl = (url) => {
   if (!url) return "https://placehold.co/400x300?text=No+Image";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
-  
-  const backendBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+  const backendBase = import.meta.env.VITE_API_BASE_URL || "https://a-e-tech-project.onrender.com";
   const origin = backendBase.replace(/\/api.*$/, "").replace(/\/$/, "");
+
+  // 1. Fix Legacy Localhost or HTTP Mixed Content URLs
+  if (url.includes("localhost:5000")) {
+    return url.replace("http://localhost:5000", origin).replace("http://", "https://");
+  }
+
+  // 2. Handle standard HTTP/HTTPS/Base64 URLs
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url.replace("http://", "https://");
+  }
+
+  // 3. Format relative paths cleanly
   let cleanPath = url.startsWith("/") ? url : `/${url}`;
-  
   if (!cleanPath.startsWith("/uploads/") && !cleanPath.startsWith("/public/")) {
     cleanPath = `/uploads${cleanPath}`;
   }
+
   return `${origin}${cleanPath}`;
 };
 
@@ -22,8 +33,7 @@ export default function Gallery() {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState("loading");
   const [category, setCategory] = useState("all");
-  
-  // State for opening full image preview
+
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
@@ -111,7 +121,6 @@ export default function Gallery() {
                         e.target.src = "https://placehold.co/400x300?text=Image+Not+Found";
                       }}
                     />
-                    
                   </div>
                 </figure>
               );
@@ -120,13 +129,12 @@ export default function Gallery() {
         )}
       </div>
 
-      {/* --- FULLSCREEN IMAGE MODAL --- */}
+      {/* Fullscreen Modal */}
       {selectedImage && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setSelectedImage(null)}
         >
-          {/* Close Button */}
           <button
             onClick={() => setSelectedImage(null)}
             className="absolute top-5 right-5 text-white bg-slate-800/80 hover:bg-slate-700 rounded-full p-2.5 px-4 text-sm font-bold transition-colors z-10"
@@ -134,7 +142,6 @@ export default function Gallery() {
             ✕ Close
           </button>
 
-          {/* Modal Content */}
           <div
             className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center"
             onClick={(e) => e.stopPropagation()}

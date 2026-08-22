@@ -33,8 +33,11 @@ const contactRoutes = getRouter(require("./routes/contact"), "contact");
 const settingsRoutes = getRouter(require("./routes/settings"), "settings");
 const testimonialsRoutes = getRouter(require("./routes/testimonials"), "testimonials");
 const usersRoutes = getRouter(require("./routes/users"), "users");
+const uploadRoutes = getRouter(require("./routes/upload"), "upload");
 
 const app = express();
+
+app.use("/api/upload", uploadRoutes);
 
 // Set up allowed origins without trailing slashes
 const rawOrigin = process.env.CORS_ORIGIN || "https://augusmart.vercel.app";

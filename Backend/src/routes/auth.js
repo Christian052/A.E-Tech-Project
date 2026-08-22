@@ -30,10 +30,13 @@ function signRefreshToken(user) {
 }
 
 function setRefreshCookie(res, token) {
+  const isProduction = process.env.NODE_ENV === "production";
+  
   res.cookie("refreshToken", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    // Cross-domain cookies (Vercel -> Render) REQUIRE sameSite: "none" and secure: true
+    secure: isProduction || true, 
+    sameSite: isProduction ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/api/auth",
   });
@@ -91,7 +94,13 @@ router.post("/refresh", dbGuard, async (req, res, next) => {
 
 // POST /api/auth/logout
 router.post("/logout", (req, res) => {
-  res.clearCookie("refreshToken", { path: "/api/auth" });
+  const isProduction = process.env.NODE_ENV === "production";
+
+  res.clearCookie("refreshToken", {
+    path: "/api/auth",
+    secure: isProduction || true,
+    sameSite: isProduction ? "none" : "lax",
+  });
   res.status(200).json({ success: true, message: "Logged out" });
 });
 

@@ -36,26 +36,38 @@ const usersRoutes = getRouter(require("./routes/users"), "users");
 
 const app = express();
 
-// Security middleware allowing cross-origin image requests
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
+// Set up allowed origins without trailing slashes
+const rawOrigin = process.env.CORS_ORIGIN || "https://augusmart.vercel.app";
+const allowedOrigins = rawOrigin.split(",").map((url) => url.trim().replace(/\/$/, ""));
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "https://augusmart.vercel.app/",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like server-to-server or mobile apps)
+      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
     credentials: true,
   })
 );
+
+// Configure Helmet to allow cross-origin fetching of static images
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // --- DUAL-PATH STATIC UPLOADS SERVING ---
-// Express will check both ./uploads and ../uploads so file paths match regardless of project folder structure
 const uploadsPathPrimary = path.join(__dirname, "uploads");
 const uploadsPathFallback = path.join(__dirname, "..", "uploads");
 

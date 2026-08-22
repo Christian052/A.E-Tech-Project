@@ -1,11 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-<<<<<<< HEAD
   baseURL: import.meta.env.VITE_API_URL || "https://a-e-tech-project.onrender.com/api",
-=======
-  baseURL: import.meta.env.VITE_API_URL ||"https://a-e-tech-project.onrender.com/api",
->>>>>>> d07aa7097afb760b00a76204520078c918542f04
   withCredentials: true, // Send httpOnly refresh cookie
 });
 

@@ -1,9 +1,9 @@
 const express = require("express");
 const multer = require("multer");
-const { v2: cloudinary } = require("cloudinary");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const { body, validationResult } = require("express-validator");
+const path = require("path");
 
+const supabase = require("../config/supabase");
 const GalleryItem = require("../models/GalleryItem");
 const dbGuard = require("../middleware/dbGuard");
 const { requireAuth, requireRole } = require("../middleware/auth");
@@ -11,44 +11,22 @@ const { requireAuth, requireRole } = require("../middleware/auth");
 const router = express.Router();
 
 /* =========================================================
-   CLOUDINARY CONFIGURATION
+   MULTER CONFIGURATION (MEMORY STORAGE FOR SUPABASE)
 ========================================================= */
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-/* =========================================================
-   CLOUDINARY STORAGE
-========================================================= */
-
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "augu_smart_uploads/gallery",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    resource_type: "image",
-  },
-});
-
-/* =========================================================
-   MULTER CONFIGURATION
-========================================================= */
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       "image/jpeg",
       "image/png",
       "image/webp",
+      "image/jpg",
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
@@ -69,11 +47,9 @@ const upload = multer({
 router.get("/", dbGuard, async (req, res, next) => {
   try {
     const { category } = req.query;
-
     const filter = category ? { category } : {};
 
-    const items = await GalleryItem.find(filter)
-      .sort({ createdAt: -1 });
+    const items = await GalleryItem.find(filter).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -88,8 +64,8 @@ router.get("/", dbGuard, async (req, res, next) => {
    POST /api/gallery
    ADMIN / EDITOR
 
-   Uploads image directly to Cloudinary and stores
-   the Cloudinary URL in MongoDB.
+   Uploads image directly to Supabase Storage ('gallery' bucket)
+   and stores the public URL in MongoDB.
 ========================================================= */
 
 router.post(
@@ -111,7 +87,6 @@ router.post(
       /* ---------------------------------------------------
          VALIDATION
       --------------------------------------------------- */
-
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
@@ -124,11 +99,36 @@ router.post(
         });
       }
 
-      /* ---------------------------------------------------
-         GET CLOUDINARY IMAGE URL
-      --------------------------------------------------- */
+      let imageUrl = req.body.imageUrl;
 
-      const imageUrl = req.file?.path || req.body.imageUrl;
+      /* ---------------------------------------------------
+         UPLOAD TO SUPABASE STORAGE
+      --------------------------------------------------- */
+      if (req.file) {
+        // Create a unique filename: timestamp-originalfilename
+        const ext = path.extname(req.file.originalname);
+        const fileBaseName = path.basename(req.file.originalname, ext)
+          .replace(/[^a-zA-Z0-9]/g, "_");
+        const fileName = `${Date.now()}_${fileBaseName}${ext}`;
+
+        const { data, error } = await supabase.storage
+          .from("gallery")
+          .upload(fileName, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: false,
+          });
+
+        if (error) {
+          throw new Error(`Supabase upload failed: ${error.message}`);
+        }
+
+        // Generate the Public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("gallery")
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrlData.publicUrl;
+      }
 
       if (!imageUrl) {
         return res.status(400).json({
@@ -138,21 +138,13 @@ router.post(
       }
 
       /* ---------------------------------------------------
-         CREATE GALLERY ITEM
+         CREATE GALLERY ITEM IN MONGODB
       --------------------------------------------------- */
-
       const item = await GalleryItem.create({
         title: req.body.title.trim(),
-
-        category:
-          req.body.category?.trim() || "General",
-
+        category: req.body.category?.trim() || "General",
         imageUrl,
       });
-
-      /* ---------------------------------------------------
-         RESPONSE
-      --------------------------------------------------- */
 
       return res.status(201).json({
         success: true,
@@ -170,7 +162,7 @@ router.post(
    DELETE /api/gallery/:id
 
    Deletes:
-   1. Image from Cloudinary
+   1. Image file from Supabase Storage
    2. Gallery record from MongoDB
 ========================================================= */
 
@@ -185,7 +177,6 @@ router.delete(
       /* ---------------------------------------------------
          FIND ITEM
       --------------------------------------------------- */
-
       const item = await GalleryItem.findById(req.params.id);
 
       if (!item) {
@@ -196,50 +187,34 @@ router.delete(
       }
 
       /* ---------------------------------------------------
-         DELETE IMAGE FROM CLOUDINARY
+         DELETE IMAGE FROM SUPABASE STORAGE
       --------------------------------------------------- */
-
       if (item.imageUrl) {
         try {
-          const imageUrl = item.imageUrl;
+          // Extract file path from Supabase public URL
+          // URL format: .../object/public/gallery/filename.jpg
+          const urlParts = item.imageUrl.split("/gallery/");
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
 
-          const uploadIndex = imageUrl.indexOf("/upload/");
+            console.log("Deleting Supabase image:", filePath);
 
-          if (uploadIndex !== -1) {
-            let publicId = imageUrl.substring(
-              uploadIndex + "/upload/".length
-            );
+            const { error: storageError } = await supabase.storage
+              .from("gallery")
+              .remove([filePath]);
 
-            // Remove Cloudinary version
-            publicId = publicId.replace(/^v\d+\//, "");
-
-            // Remove image extension
-            publicId = publicId.replace(/\.[^/.]+$/, "");
-
-            console.log(
-              "Deleting Cloudinary image:",
-              publicId
-            );
-
-            await cloudinary.uploader.destroy(publicId);
+            if (storageError) {
+              console.error("Supabase Storage delete error:", storageError.message);
+            }
           }
-        } catch (cloudinaryError) {
-          console.error(
-            "Cloudinary delete error:",
-            cloudinaryError
-          );
-
-          /*
-           * We don't stop MongoDB deletion if Cloudinary
-           * deletion fails.
-           */
+        } catch (supabaseErr) {
+          console.error("Error extracting/deleting Supabase image:", supabaseErr);
         }
       }
 
       /* ---------------------------------------------------
          DELETE MONGODB RECORD
       --------------------------------------------------- */
-
       await GalleryItem.findByIdAndDelete(req.params.id);
 
       return res.status(200).json({
@@ -252,9 +227,5 @@ router.delete(
     }
   }
 );
-
-/* =========================================================
-   EXPORT ROUTER
-========================================================= */
 
 module.exports = router;

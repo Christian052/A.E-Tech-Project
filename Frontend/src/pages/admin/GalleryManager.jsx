@@ -14,8 +14,8 @@ const CATEGORIES = [
 /* =========================================================
    IMAGE URL HELPER
 
-   Cloudinary URLs:
-   https://res.cloudinary.com/...
+   Supabase Storage / External HTTPS URLs:
+   https://uokidhjbmmlquhijgzd.supabase.co/...
    are returned directly.
 
    Old/local image paths:
@@ -28,7 +28,7 @@ const getImageUrl = (url) => {
     return "https://placehold.co/400x300?text=No+Image";
   }
 
-  // Cloudinary / external HTTPS URLs
+  // Supabase / External HTTPS URLs
   if (
     url.startsWith("http://") ||
     url.startsWith("https://") ||
@@ -194,13 +194,7 @@ export default function GalleryManager({ items = [], setItems }) {
   /* =========================================================
      UPLOAD
      
-     IMPORTANT:
-     The frontend now sends the image directly to:
-
-       POST /gallery
-
-     The backend handles:
-       React → Express → Cloudinary → MongoDB
+     Flow: React -> Express API -> Supabase Storage -> MongoDB
   ========================================================= */
 
   const onSubmit = async (e) => {
@@ -234,14 +228,6 @@ export default function GalleryManager({ items = [], setItems }) {
       formData.append("title", title.trim());
       formData.append("category", category);
       formData.append("image", file);
-
-      /*
-       * IMPORTANT:
-       * Do NOT manually set Content-Type.
-       *
-       * Axios/browser automatically creates:
-       * multipart/form-data; boundary=...
-       */
 
       const { data } = await api.post(
         "/gallery",
@@ -343,10 +329,7 @@ export default function GalleryManager({ items = [], setItems }) {
   if (showUpload) {
     return (
       <div className="min-h-screen bg-slate-50">
-        {/* =================================================
-            HERO
-        ================================================== */}
-
+        {/* HERO */}
         <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] px-4 py-8 text-white sm:px-6 md:px-12 md:py-10 lg:px-20">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -372,21 +355,16 @@ export default function GalleryManager({ items = [], setItems }) {
           </div>
         </div>
 
-        {/* =================================================
-            FORM
-        ================================================== */}
-
+        {/* FORM */}
         <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
           <form
             onSubmit={onSubmit}
             className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-md sm:p-6 md:p-8"
           >
             {/* TITLE */}
-
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Title{" "}
-                <span className="text-red-500">*</span>
+                Title <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -404,11 +382,9 @@ export default function GalleryManager({ items = [], setItems }) {
             </div>
 
             {/* CATEGORY */}
-
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Category{" "}
-                <span className="text-red-500">*</span>
+                Category <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -417,24 +393,18 @@ export default function GalleryManager({ items = [], setItems }) {
                 disabled={saving}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
               >
-                {CATEGORIES.filter(
-                  (c) => c !== "all"
-                ).map((c) => (
+                {CATEGORIES.filter((c) => c !== "all").map((c) => (
                   <option key={c} value={c}>
-                    {c
-                      .replace("-", " ")
-                      .toUpperCase()}
+                    {c.replace("-", " ").toUpperCase()}
                   </option>
                 ))}
               </select>
             </div>
 
             {/* IMAGE */}
-
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Image File{" "}
-                <span className="text-red-500">*</span>
+                Image File <span className="text-red-500">*</span>
               </label>
 
               {previewUrl ? (
@@ -467,9 +437,7 @@ export default function GalleryManager({ items = [], setItems }) {
                       : "border-slate-300 bg-slate-50"
                   }`}
                 >
-                  <div className="mb-3 text-4xl">
-                    🖼️
-                  </div>
+                  <div className="mb-3 text-4xl">🖼️</div>
 
                   <p className="text-sm text-slate-600">
                     Drag & drop image here or
@@ -477,7 +445,6 @@ export default function GalleryManager({ items = [], setItems }) {
 
                   <label className="mt-3 cursor-pointer rounded-full bg-teal-500 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-teal-600">
                     Select File
-
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -495,7 +462,6 @@ export default function GalleryManager({ items = [], setItems }) {
             </div>
 
             {/* ERROR */}
-
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-600">
                 {error}
@@ -503,7 +469,6 @@ export default function GalleryManager({ items = [], setItems }) {
             )}
 
             {/* BUTTONS */}
-
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <button
                 type="button"
@@ -523,7 +488,7 @@ export default function GalleryManager({ items = [], setItems }) {
                 className="w-full rounded-full bg-teal-500 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-1/2"
               >
                 {saving
-                  ? "Uploading to Cloudinary..."
+                  ? "Uploading to Supabase..."
                   : "Upload Photo"}
               </button>
             </div>
@@ -539,10 +504,7 @@ export default function GalleryManager({ items = [], setItems }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* =================================================
-          HERO
-      ================================================== */}
-
+      {/* HERO */}
       <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] px-4 py-10 text-white sm:px-6 md:px-12 md:py-14 lg:px-20">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
@@ -555,9 +517,8 @@ export default function GalleryManager({ items = [], setItems }) {
             </h1>
 
             <p className="max-w-2xl text-sm font-light text-slate-300 md:text-base">
-              Manage, upload, and clean up photos of
-              repairs, installations, and training
-              sessions in Kigali.
+              Manage, upload, and clean up photos of repairs, installations, and
+              training sessions in Kigali.
             </p>
           </div>
 
@@ -574,23 +535,15 @@ export default function GalleryManager({ items = [], setItems }) {
         </div>
       </div>
 
-      {/* =================================================
-          CONTENT
-      ================================================== */}
-
+      {/* CONTENT */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:px-12 lg:px-20">
-        {/* =================================================
-            CATEGORY FILTERS
-        ================================================== */}
-
+        {/* CATEGORY FILTERS */}
         <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
           {CATEGORIES.map((c) => (
             <button
               key={c}
               type="button"
-              onClick={() =>
-                setSelectedCategory(c)
-              }
+              onClick={() => setSelectedCategory(c)}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
                 selectedCategory === c
                   ? "bg-teal-500 text-white shadow-sm"
@@ -602,20 +555,14 @@ export default function GalleryManager({ items = [], setItems }) {
           ))}
         </div>
 
-        {/* =================================================
-            EMPTY STATE
-        ================================================== */}
-
+        {/* EMPTY STATE */}
         {filteredItems.length === 0 && (
           <div className="my-8 rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 sm:p-12">
             No photos in this category yet.
           </div>
         )}
 
-        {/* =================================================
-            GALLERY GRID
-        ================================================== */}
-
+        {/* GALLERY GRID */}
         {filteredItems.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => {
@@ -628,8 +575,7 @@ export default function GalleryManager({ items = [], setItems }) {
                 item.path ||
                 item.src;
 
-              const fullUrl =
-                getImageUrl(rawImageUrl);
+              const fullUrl = getImageUrl(rawImageUrl);
 
               return (
                 <figure
@@ -643,32 +589,23 @@ export default function GalleryManager({ items = [], setItems }) {
                   className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-md transition-all duration-300 hover:shadow-xl"
                 >
                   {/* IMAGE */}
-
                   <div className="relative h-56 w-full overflow-hidden bg-slate-100 sm:h-60">
                     <img
                       src={fullUrl}
-                      alt={
-                        item.title ||
-                        "Gallery Item"
-                      }
+                      alt={item.title || "Gallery Item"}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.onerror =
-                          null;
-
+                        e.currentTarget.onerror = null;
                         e.currentTarget.src =
                           "https://placehold.co/400x300?text=Image+Not+Found";
                       }}
                     />
 
                     {/* DELETE */}
-
                     <button
                       type="button"
-                      onClick={(e) =>
-                        onDelete(e, itemId)
-                      }
+                      onClick={(e) => onDelete(e, itemId)}
                       className="absolute right-3 top-3 rounded-md bg-red-600/90 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md transition-colors hover:bg-red-600"
                     >
                       Delete
@@ -676,7 +613,6 @@ export default function GalleryManager({ items = [], setItems }) {
                   </div>
 
                   {/* CAPTION */}
-
                   {item.title && (
                     <div className="flex items-center justify-between border-t border-slate-100 bg-white p-3">
                       <p
@@ -694,41 +630,27 @@ export default function GalleryManager({ items = [], setItems }) {
         )}
       </div>
 
-      {/* =================================================
-          FULLSCREEN IMAGE MODAL
-      ================================================== */}
-
+      {/* FULLSCREEN IMAGE MODAL */}
       {selectedImage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 backdrop-blur-sm sm:p-4"
           onClick={() => setSelectedImage(null)}
         >
-          {/* CLOSE */}
-
           <button
             type="button"
-            onClick={() =>
-              setSelectedImage(null)
-            }
+            onClick={() => setSelectedImage(null)}
             className="absolute right-3 top-3 z-10 rounded-full bg-slate-800/80 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700 sm:right-5 sm:top-5"
           >
             ✕ Close
           </button>
 
-          {/* IMAGE */}
-
           <div
             className="relative flex max-h-[90vh] max-w-5xl flex-col items-center justify-center"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           >
             <img
               src={selectedImage.url}
-              alt={
-                selectedImage.title ||
-                "Full preview"
-              }
+              alt={selectedImage.title || "Full preview"}
               className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]"
             />
 

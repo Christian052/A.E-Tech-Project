@@ -338,19 +338,19 @@ export default function Gallery() {
 
                       {/* CATEGORY BADGE */}
 
-                      {item.category && (
+                      {/* {item.category && (
                         <div className="absolute bottom-3 left-3 rounded-full bg-slate-900/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
                           {item.category.replace(
                             "-",
                             " "
                           )}
                         </div>
-                      )}
+                      )} */}
                     </div>
 
                     {/* TITLE */}
 
-                    {item.title && (
+                    {/* {item.title && (
                       <figcaption className="border-t border-slate-100 bg-white p-3">
                         <p
                           className="truncate text-sm font-semibold text-slate-800"
@@ -359,7 +359,7 @@ export default function Gallery() {
                           {item.title}
                         </p>
                       </figcaption>
-                    )}
+                    )} */}
                   </figure>
                 );
               })}
@@ -407,11 +407,11 @@ export default function Gallery() {
               className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]"
             />
 
-            {/* {selectedImage.title && (
+            {selectedImage.title && (
               <p className="mt-3 max-w-[90vw] rounded-full bg-slate-900/60 px-4 py-1.5 text-center text-sm font-medium text-white">
                 {selectedImage.title}
               </p>
-            )} */}
+            )}
           </div>
         </div>
       )}

@@ -32,7 +32,7 @@ const applicationsRoutes = getRouter(require("./routes/applications"), "applicat
 const contactRoutes = getRouter(require("./routes/contact"), "contact");
 const settingsRoutes = getRouter(require("./routes/settings"), "settings");
 const testimonialsRoutes = getRouter(require("./routes/testimonials"), "testimonials");
-const usersRoutes = getRouter(require("./routes/users"), "users");
+const usersRoutes = getRouter(require("./routes/Users"), "users");
 const uploadRoutes = getRouter(require("./routes/upload"), "upload");
 
 const app = express();

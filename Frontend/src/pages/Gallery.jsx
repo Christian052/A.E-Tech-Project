@@ -407,11 +407,11 @@ export default function Gallery() {
               className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]"
             />
 
-            {selectedImage.title && (
+            {/* {selectedImage.title && (
               <p className="mt-3 max-w-[90vw] rounded-full bg-slate-900/60 px-4 py-1.5 text-center text-sm font-medium text-white">
                 {selectedImage.title}
               </p>
-            )}
+            )} */}
           </div>
         </div>
       )}

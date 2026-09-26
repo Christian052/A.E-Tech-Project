@@ -51,6 +51,9 @@ const createTrainingProgramValidation = [
     .optional()
     .isInt({ min: 0 })
     .withMessage("Seats available must be 0 or greater"),
+  body("level").optional().trim(),
+  body("startDate").optional(),
+  body("topics").optional().isArray(),
   imageUrlRule,
 ];
 
@@ -66,6 +69,9 @@ const updateTrainingProgramValidation = [
     .optional()
     .isInt({ min: 0 })
     .withMessage("Seats available must be 0 or greater"),
+  body("level").optional().trim(),
+  body("startDate").optional(),
+  body("topics").optional().isArray(),
   imageUrlRule,
 ];
 

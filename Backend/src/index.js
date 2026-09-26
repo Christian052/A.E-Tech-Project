@@ -36,6 +36,7 @@ const usersRoutes = getRouter(require("./routes/Users"), "users");
 const uploadRoutes = getRouter(require("./routes/upload"), "upload");
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use("/api/upload", uploadRoutes);
 

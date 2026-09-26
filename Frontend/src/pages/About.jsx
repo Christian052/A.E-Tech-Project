@@ -1,5 +1,6 @@
 import { useSettings } from "../hooks/useSettings";
-import img from '../../public/A.E TECH 001.jpg'
+
+const img = "/A.E TECH 001.jpg";
 
 export default function About() {
   const { settings } = useSettings();
@@ -30,30 +31,30 @@ export default function About() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
       {/* Dark Hero Header Banner */}
-      <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-16 pb-20 px-6 md:px-12 lg:px-24">
-        <div className="max-w-7xl mx-auto">
-          <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-3">
+      <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="max-w-6xl mx-auto">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-2 sm:mb-3">
             ABOUT US
           </span>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-4 max-w-2xl leading-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 max-w-2xl leading-tight">
             A workshop built on honest diagnostics
           </h1>
-          <p className="text-slate-300 text-sm md:text-base font-normal max-w-2xl leading-relaxed">
-            {settings?.businessName || "A.E. Tech"}, known locally as Computer Universe, serves homes, shops and offices across Kigali from our bench in Norvege, Karama.
+          <p className="text-slate-300 text-xs sm:text-base font-normal max-w-2xl leading-relaxed">
+            {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"}, known locally as Computer Universe, serves homes, shops and offices across Kigali from our bench in Norvege, Karama.
           </p>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-24 py-12">
-        <div className="grid gap-12 lg:grid-cols-12 items-start">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 lg:px-20 py-8 sm:py-12">
+        <div className="grid gap-8 lg:gap-12 lg:grid-cols-12 items-start">
           
           {/* Left Column (Story & How We Work) */}
-          <div className="lg:col-span-7 space-y-10">
+          <div className="lg:col-span-7 space-y-8 sm:space-y-10">
             {/* Our Story */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Our story</h2>
-              <div className="space-y-4 text-slate-600 text-sm md:text-base leading-relaxed">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4">Our story</h2>
+              <div className="space-y-3 sm:space-y-4 text-slate-600 text-xs sm:text-base leading-relaxed">
                 <p>
                   We started with a bench, a soldering iron and a simple rule: tell the customer what is actually wrong before charging anything. That rule turned into a workshop handling laptops, desktops, printers, office networks and CCTV systems across Nyarugenge and beyond.
                 </p>
@@ -65,16 +66,16 @@ export default function About() {
 
             {/* How We Work Steps */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-6">How we work</h2>
-              <div className="space-y-6">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 sm:mb-6">How we work</h2>
+              <div className="space-y-4 sm:space-y-6">
                 {steps.map((step) => (
-                  <div key={step.num} className="flex items-start gap-4">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 border border-slate-200">
+                  <div key={step.num} className="flex items-start gap-3 sm:gap-4">
+                    <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 border border-slate-200">
                       {step.num}
                     </span>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">{step.title}</h3>
-                      <p className="text-xs md:text-sm text-slate-500 mt-0.5">{step.desc}</p>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900">{step.title}</h3>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{step.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -89,7 +90,7 @@ export default function About() {
               <img
                 src={img}
                 alt="Technician at work on hardware repair"
-                className="h-96 w-full object-cover"
+                className="h-64 sm:h-80 md:h-96 w-full object-cover"
               />
             </div>
 

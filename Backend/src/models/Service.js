@@ -4,9 +4,11 @@ const serviceSchema = new mongoose.Schema(
   {
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     name: { type: String, required: true, trim: true },
+    category: { type: String, default: "Hardware & Systems", trim: true },
     shortDescription: { type: String, required: true, maxlength: 220 },
     fullDescription: { type: String, default: "" },
     icon: { type: String, default: "" },
+    features: [{ type: String }],
     images: [{ type: String }],
     order: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },

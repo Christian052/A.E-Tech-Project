@@ -14,6 +14,7 @@ const contactLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: "Too many requests. Please try again later.",

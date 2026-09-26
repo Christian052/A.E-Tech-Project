@@ -12,6 +12,11 @@ const trainingProgramSchema = new mongoose.Schema(
       required: [true, "Description is required"],
       trim: true,
     },
+    level: {
+      type: String,
+      trim: true,
+      default: "Beginner & Intermediate",
+    },
     durationWeeks: {
       type: Number,
       required: [true, "Duration is required"],
@@ -26,6 +31,7 @@ const trainingProgramSchema = new mongoose.Schema(
     startDate: {
       type: Date,
     },
+    topics: [{ type: String, trim: true }],
     isActive: {
       type: Boolean,
       default: true,

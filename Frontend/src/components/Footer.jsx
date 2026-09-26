@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
-import img from "../../public/A.E TECH 002.png";
+
+const img = "/A.E TECH 002.png";
 
 export default function Footer() {
   const { settings } = useSettings();

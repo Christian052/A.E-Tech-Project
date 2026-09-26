@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { useSettings } from "../hooks/useSettings";
 
@@ -14,7 +14,7 @@ const contactSchema = z.object({
   website: z.string().optional(), // honeypot
 });
 
-const serviceOptions = [
+const defaultServiceOptions = [
   { value: "", label: "General inquiry" },
   { value: "computer-repair", label: "Computer Repair & Maintenance" },
   { value: "printer-photocopier-repair", label: "Printer/Photocopier Repair" },
@@ -27,6 +27,29 @@ const serviceOptions = [
 export default function Contact() {
   const { settings } = useSettings();
   const [result, setResult] = useState(null);
+  const [dbServices, setDbServices] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/services")
+      .then(({ data }) => {
+        if (Array.isArray(data.services) && data.services.length > 0) {
+          setDbServices(data.services.filter((s) => s.isActive !== false));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const serviceOptions =
+    dbServices.length > 0
+      ? [
+          { value: "", label: "General inquiry" },
+          ...dbServices.map((s) => ({
+            value: s.slug || s.name,
+            label: s.name,
+          })),
+        ]
+      : defaultServiceOptions;
 
   const {
     register,
@@ -70,22 +93,22 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-16 pb-20 px-6 md:px-12 lg:px-24">
-        <div className="max-w-7xl mx-auto">
-          <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-3">
+      <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="max-w-6xl mx-auto">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-2 sm:mb-3">
             CONTACT US
           </span>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4">
             Talk to a technician today
           </h1>
-          <p className="text-slate-300 text-sm md:text-base font-normal max-w-2xl leading-relaxed">
+          <p className="text-slate-300 text-xs sm:text-base font-normal max-w-2xl leading-relaxed">
             Call, WhatsApp or send us the details of your problem. We reply during working hours, Monday to Friday.
           </p>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-24 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 lg:px-20 py-8 sm:py-12">
         <div className="grid gap-8 lg:grid-cols-12 items-start">
 
           {/* Left Column (Direct Lines & Map) */}

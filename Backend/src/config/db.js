@@ -5,20 +5,23 @@ let isConnected = false;
 async function connectDB() {
   if (isConnected) return mongoose.connection;
 
-  const uri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/aetech";
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.warn("[db] No MONGO_URI set — active with in-memory mock fallback");
+    return null;
+  }
 
   mongoose.set("strictQuery", true);
+  mongoose.set("bufferCommands", false);
 
   try {
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 8000,
+      serverSelectionTimeoutMS: 2000,
     });
     isConnected = true;
     console.log(`[db] connected -> ${mongoose.connection.host}/${mongoose.connection.name}`);
   } catch (err) {
-    console.error("[db] connection error:", err.message);
-    // Non-fatal on boot: allow the API to still serve cached/static routes.
-    // Individual routes that require DB will surface a 503.
+    console.warn("[db] connection error (falling back to mock store):", err.message);
   }
 
   mongoose.connection.on("disconnected", () => {
@@ -30,7 +33,7 @@ async function connectDB() {
 }
 
 function isDbConnected() {
-  return mongoose.connection.readyState === 1;
+  return isConnected && mongoose.connection.readyState === 1;
 }
 
 module.exports = { connectDB, isDbConnected };

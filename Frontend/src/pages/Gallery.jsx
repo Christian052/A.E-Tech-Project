@@ -23,76 +23,24 @@ const categories = [
 
 const getImageUrl = (url) => {
   if (!url) {
-    return "https://placehold.co/400x300?text=No+Image";
+    return "/A.E TECH 001.jpg";
   }
 
-  /* -------------------------------------------------------
-     Cloudinary / external URLs
-  ------------------------------------------------------- */
-
+  // Complete external URLs (Cloudinary, HTTPS, HTTP, data URIs)
   if (
     url.startsWith("https://") ||
     url.startsWith("http://") ||
     url.startsWith("data:")
   ) {
-    /*
-     * Cloudinary normally returns HTTPS.
-     *
-     * Keep HTTPS URLs exactly as they are.
-     *
-     * For old HTTP URLs, upgrade to HTTPS.
-     */
     return url.replace(/^http:\/\//, "https://");
   }
 
-  /* -------------------------------------------------------
-     Backend URL
-  ------------------------------------------------------- */
-
-  const backendBase =
-    import.meta.env.VITE_API_BASE_URL ||
-    "https://a-e-tech-project.onrender.com";
-
-  const origin = backendBase
-    .replace(/\/api.*$/, "")
-    .replace(/\/$/, "");
-
-  /* -------------------------------------------------------
-     Legacy localhost URLs
-  ------------------------------------------------------- */
-
-  if (url.includes("localhost:5000")) {
-    return url
-      .replace(/^http:\/\/localhost:5000/, origin)
-      .replace(/^http:\/\//, "https://");
+  // Local / public root paths (e.g. /A.E TECH 001.jpg, /uploads/...)
+  if (url.startsWith("/")) {
+    return url;
   }
 
-  /* -------------------------------------------------------
-     Relative paths
-  ------------------------------------------------------- */
-
-  let cleanPath = url.startsWith("/")
-    ? url
-    : `/${url}`;
-
-  /*
-   * Legacy database records may contain:
-   *
-   * /uploads/image.jpg
-   * /public/image.jpg
-   *
-   * If the path is neither, assume it belongs to
-   * the old uploads directory.
-   */
-
-  if (
-    !cleanPath.startsWith("/uploads/") &&
-    !cleanPath.startsWith("/public/")
-  ) {
-    cleanPath = `/uploads${cleanPath}`;
-  }
-
-  return `${origin}${cleanPath}`;
+  return `/${url}`;
 };
 
 export default function Gallery() {
@@ -222,20 +170,17 @@ export default function Gallery() {
       ====================================================== */}
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:px-12 lg:px-20">
-        {/* ===================================================
-            CATEGORY FILTERS
-        ==================================================== */}
-
-        <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
+        {/* CATEGORY FILTERS */}
+        <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
           {categories.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+              className={`shrink-0 rounded-full px-4 py-2 font-bold uppercase tracking-wider transition-colors ${
                 category === c
-                  ? "bg-teal-500 text-white shadow-sm"
-                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  ? "bg-teal-500 text-slate-900 shadow-xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
               {c.replace("-", " ")}
@@ -243,25 +188,13 @@ export default function Gallery() {
           ))}
         </div>
 
-        {/* ===================================================
-            LOADING
-        ==================================================== */}
+        {/* LOADING */}
+        {status === "loading" && <SkeletonGalleryGrid count={6} />}
 
-        {status === "loading" && (
-          <SkeletonGalleryGrid count={6} />
-        )}
-
-        {/* ===================================================
-            ERROR
-        ==================================================== */}
-
+        {/* ERROR */}
         {status === "error" && (
-          <div className="my-8 rounded-lg border border-red-200 bg-red-50 p-6 text-center text-sm text-red-600">
-            <p>
-              Couldn't load the gallery right now.
-              Please refresh or try again later.
-            </p>
-
+          <div className="my-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-600">
+            <p>Couldn't load the gallery right now. Please refresh or try again later.</p>
             <button
               type="button"
               onClick={retryGallery}
@@ -272,99 +205,67 @@ export default function Gallery() {
           </div>
         )}
 
-        {/* ===================================================
-            EMPTY STATE
-        ==================================================== */}
+        {/* EMPTY STATE */}
+        {status === "ready" && items.length === 0 && (
+          <div className="my-8 rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 sm:p-12">
+            No photos in this category yet. Check back soon.
+          </div>
+        )}
 
-        {status === "ready" &&
-          items.length === 0 && (
-            <div className="my-8 rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 sm:p-12">
-              No photos in this category yet.
-              Check back soon.
-            </div>
-          )}
+        {/* GALLERY GRID */}
+        {status === "ready" && items.length > 0 && (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => {
+              const itemId = item._id || item.id;
+              const rawImageUrl = item.imageUrl || item.image || item.url || item.path || item.src;
+              const fullUrl = getImageUrl(rawImageUrl);
 
-        {/* ===================================================
-            GALLERY GRID
-        ==================================================== */}
+              return (
+                <figure
+                  key={itemId}
+                  onClick={() =>
+                    setSelectedImage({
+                      url: fullUrl,
+                      title: item.title,
+                      category: item.category,
+                    })
+                  }
+                  className="card flex flex-col justify-between overflow-hidden p-0 bg-white hover:border-teal-400 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                >
+                  {/* IMAGE CONTAINER */}
+                  <div className="relative h-56 w-full overflow-hidden bg-slate-100 sm:h-60">
+                    <img
+                      src={fullUrl}
+                      alt={item.title || "Gallery Item"}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/A.E TECH 001.jpg";
+                      }}
+                    />
 
-        {status === "ready" &&
-          items.length > 0 && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((item) => {
-                const itemId =
-                  item._id || item.id;
+                    {/* CATEGORY BADGE */}
+                    {item.category && (
+                      <div className="absolute top-3 left-3 rounded-full bg-navy-950/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-300 backdrop-blur-xs border border-teal-500/20">
+                        {item.category.replace("-", " ")}
+                      </div>
+                    )}
+                  </div>
 
-                const rawImageUrl =
-                  item.imageUrl ||
-                  item.image ||
-                  item.url ||
-                  item.path ||
-                  item.src;
-
-                const fullUrl =
-                  getImageUrl(rawImageUrl);
-
-                return (
-                  <figure
-                    key={itemId}
-                    onClick={() =>
-                      setSelectedImage({
-                        url: fullUrl,
-                        title: item.title,
-                      })
-                    }
-                    className="group relative flex cursor-pointer flex-col overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-md transition-all duration-300 hover:shadow-xl"
-                  >
-                    {/* IMAGE */}
-
-                    <div className="relative h-56 w-full overflow-hidden bg-slate-100 sm:h-60">
-                      <img
-                        src={fullUrl}
-                        alt={
-                          item.title ||
-                          "Gallery Item"
-                        }
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.onerror =
-                            null;
-
-                          e.currentTarget.src =
-                            "https://placehold.co/400x300?text=Image+Not+Found";
-                        }}
-                      />
-
-                      {/* CATEGORY BADGE */}
-
-                      {/* {item.category && (
-                        <div className="absolute bottom-3 left-3 rounded-full bg-slate-900/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
-                          {item.category.replace(
-                            "-",
-                            " "
-                          )}
-                        </div>
-                      )} */}
-                    </div>
-
-                    {/* TITLE */}
-
-                    {/* {item.title && (
-                      <figcaption className="border-t border-slate-100 bg-white p-3">
-                        <p
-                          className="truncate text-sm font-semibold text-slate-800"
-                          title={item.title}
-                        >
-                          {item.title}
-                        </p>
-                      </figcaption>
-                    )} */}
-                  </figure>
-                );
-              })}
-            </div>
-          )}
+                  {/* TITLE CAPTION */}
+                  {item.title && (
+                    <figcaption className="border-t border-slate-100 bg-white p-3.5">
+                      <p className="truncate text-xs sm:text-sm font-bold text-navy-900" title={item.title}>
+                        {item.title}
+                      </p>
+                    </figcaption>
+                  )}
+                </figure>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* =====================================================

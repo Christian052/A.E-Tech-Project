@@ -12,21 +12,26 @@ const loginLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, message: "Too many login attempts. Please try again later." },
 });
 
 function signAccessToken(user) {
   return jwt.sign(
     { sub: user._id.toString(), role: user.role, name: user.name },
-    process.env.JWT_ACCESS_SECRET,
+    process.env.JWT_ACCESS_SECRET || "augu-smart-access-secret-2026",
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m" }
   );
 }
 
 function signRefreshToken(user) {
-  return jwt.sign({ sub: user._id.toString() }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
-  });
+  return jwt.sign(
+    { sub: user._id.toString() },
+    process.env.JWT_REFRESH_SECRET || "augu-smart-refresh-secret-2026",
+    {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
+    }
+  );
 }
 
 function setRefreshCookie(res, token) {

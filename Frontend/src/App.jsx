@@ -22,6 +22,7 @@ export default function App() {
   // The admin dashboard renders its own full-bleed operational layout
   // (sidebar + topbar), so the public site chrome is skipped there.
   const isAdminConsole = location.pathname.startsWith("/admin/dashboard");
+  const isLoginPage = ["/admin/login", "/login", "/admin"].includes(location.pathname);
 
   if (isAdminConsole) {
     return (
@@ -40,6 +41,16 @@ export default function App() {
     );
   }
 
+  if (isLoginPage) {
+    return (
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLogin />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -52,6 +63,8 @@ export default function App() {
           <Route path="/training" element={<Training />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

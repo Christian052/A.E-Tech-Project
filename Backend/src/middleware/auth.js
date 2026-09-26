@@ -9,7 +9,7 @@ function requireAuth(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET || "augu-smart-access-secret-2026");
     req.user = payload; // { sub, role, name }
     next();
   } catch (err) {

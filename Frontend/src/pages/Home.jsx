@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { SkeletonServiceCardGrid } from "../components/Skeleton";
+import ServiceCard from "../components/ServiceCard";
+import TestimonialsSection from "../components/TestimonialsSection";
+import { mergeServicesWithDefaults } from "../utils/servicesData";
 import { useSettings } from "../hooks/useSettings";
-import img from '../../public/A.E TECH 001.jpg'
+
+const img = "/A.E TECH 001.jpg";
 
 export default function Home() {
   const { settings } = useSettings();
@@ -23,72 +27,137 @@ export default function Home() {
       .catch(() => setStatus("error"));
   }, []);
 
+  const displayServices = mergeServicesWithDefaults(services);
+
   return (
     <div className="bg-slate-50 min-h-screen text-slate-800">
       {/* 1. HERO SECTION */}
-      <section className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B]  text-white py-12 md:py-20 px-6 sm:px-12 lg:px-20">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          {/* Hero Content */}
-          <div>
-            <p className="text-xs uppercase tracking-widest font-semibold text-teal-400 mb-3">
-              COMPUTER UNIVERSE · KIGALI, RWANDA
-            </p>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-              Your computers, network and cameras fixed properly.
+      <section className="relative overflow-hidden bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white py-14 md:py-20 px-6 sm:px-12 lg:px-20">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* Hero Content (Left 7 cols on large screens) */}
+          <div className="lg:col-span-7">
+            {/* Unboxed clean kicker metadata */}
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-400 mb-4">
+              <span>AUGU SMART ELECTRONIC SERVICE</span>
+              <span aria-hidden="true" className="text-teal-600">·</span>
+              <span>Kigali, Rwanda</span>
+            </div>
+
+            {/* Bold Heading */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight leading-[1.12] text-white">
+              Expert Computer Repair, CCTV Installation &amp; IT Training
             </h1>
-            <p className="mt-4 text-sm sm:text-base text-navy-200 leading-relaxed max-w-xl">
-              {settings?.businessName || "AUGU Tech"} repairs computers and printers, builds networks, installs CCTV and trains the next generation of technicians from our workshop in Norvege, Karama.
+
+            {/* Brief Value Proposition */}
+            <p className="mt-5 text-sm sm:text-base lg:text-lg text-slate-200 leading-relaxed max-w-xl">
+              From component-level computer and printer diagnostics to turnkey CCTV security installations and hands-on IT training, we deliver fast, guaranteed technology solutions with transparent quotes before any repair.
             </p>
 
-            {/* CTAs */}
-            <div className="mt-6 flex flex-wrap gap-3 items-center">
-              <a
-                href={`tel:${settings?.phone || "+250783432438"}`}
-                className="inline-flex items-center gap-2 rounded bg-teal-500 hover:bg-teal-400 px-5 py-2.5 text-xs font-bold text-navy-900 shadow transition-colors"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            {/* Service Pillars Checklist */}
+            <div className="mt-5 flex flex-wrap items-center gap-y-2 gap-x-5 text-xs text-slate-300 font-medium">
+              <div className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                {settings?.phone || "+250 783 432 438"}
+                <span>Component-Level Computer Repair</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Turnkey CCTV Surveillance</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Practical IT Internships</span>
+              </div>
+            </div>
+
+            {/* Call To Action Buttons */}
+            <div className="mt-8 flex flex-wrap gap-3.5 items-center">
+              {/* Primary Call-To-Action Button */}
+              <Link
+                to="/contact"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3.5 text-xs sm:text-sm font-bold text-slate-950 shadow-md transition-all duration-200 hover:shadow-teal-400/25 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-[#031B33]"
+              >
+                <span>Request a Service</span>
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+
+              {/* Secondary CTA: View Offerings Grid */}
+              <a
+                href="#services"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 hover:bg-white/20 px-5 py-3.5 text-xs sm:text-sm font-semibold text-white backdrop-blur-xs transition-colors"
+              >
+                Explore Offerings
               </a>
 
+              {/* Secondary CTA: Direct WhatsApp Contact */}
               <a
-                href={`https://wa.me/${(settings?.phone || "250783432438").replace(/[^0-9]/g, "")}`}
+                href={`https://wa.me/${(settings?.whatsapp || settings?.phone || "+250783432438").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                  "Hello AUGU Tech, I would like to inquire about your repair, CCTV, or IT training services."
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-5 py-2.5 text-xs font-semibold text-navy-900 shadow-sm hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 px-4 py-3.5 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white transition-colors"
+                title="Chat with our technicians on WhatsApp"
               >
-                <svg className="h-4 w-4 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 text-emerald-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z" />
                 </svg>
-                Chat on WhatsApp
+                <span>WhatsApp</span>
               </a>
             </div>
 
-            {/* Quick Metrics */}
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-navy-800 pt-6">
+            {/* Quick Metrics Bar */}
+            <div className="mt-10 grid grid-cols-3 gap-3 sm:gap-6 border-t border-white/10 pt-6">
               <div>
-                <p className="text-xs text-navy-300">Services</p>
-                <p className="text-lg font-bold text-white">6</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Core Services</p>
+                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">{displayServices.length} Offerings</p>
               </div>
               <div>
-                <p className="text-xs text-navy-300">Open</p>
-                <p className="text-lg font-bold text-white">{settings?.hours?.days || "Mon–Fri"}</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Diagnostic Fee</p>
+                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">Free Quote</p>
               </div>
               <div>
-                <p className="text-xs text-navy-300">Diagnostics</p>
-                <p className="text-lg font-bold text-white">Free</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Location</p>
+                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">Nyarugenge</p>
               </div>
             </div>
           </div>
 
-          {/* Hero Image Card */}
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-navy-700 bg-navy-800 aspect-[4/3]">
-            <img
-              src={img}
-              alt="Technician repairing equipment"
-              className="w-full h-full object-cover"
-            />
+          {/* Hero Visual Card (Right 5 cols on large screens) */}
+          <div className="lg:col-span-5">
+            <div className="relative">
+              {/* Decorative subtle backdrop blur glow */}
+              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-tr from-teal-500/20 to-teal-300/10 blur-xl opacity-75" />
+
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-navy-700/80 bg-navy-800 aspect-[4/3] group">
+                <img
+                  src={img}
+                  alt="AUGU Tech electronics workshop technician testing circuit boards"
+                  className="w-full h-full object-cover transform group-hover:scale-103 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#031B33]/85 via-[#031B33]/20 to-transparent" />
+
+                {/* Service Promise Guarantee Card */}
+                <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-[#031B33]/90 backdrop-blur-md border border-white/10 p-3.5 text-white shadow-lg">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Service Guarantee</p>
+                      <p className="text-xs font-semibold text-slate-100 mt-0.5">Quote before any repair · 100% genuine parts</p>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-teal-500/20 text-teal-300 border border-teal-400/30 px-2.5 py-1 text-[11px] font-bold">
+                      Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -128,13 +197,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. SERVICES HIGHLIGHT GRID */}
-      <section className="py-16 px-6 sm:px-12 lg:px-20 max-w-6xl mx-auto">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-teal-500">WHAT WE DO</p>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">
-            Six service lines, one workshop
-          </h2>
+      {/* 3. SERVICES SECTION */}
+      <section id="services" className="py-16 px-6 sm:px-12 lg:px-20 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-teal-500">OUR SERVICES</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">
+              Company Offerings & Solutions
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 max-w-xl">
+              Professional computer repair, turnkey CCTV installation, and hands-on IT training tailored for businesses, schools, and individuals in Kigali.
+            </p>
+          </div>
+          <Link
+            to="/services"
+            className="inline-flex items-center text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 hover:underline shrink-0"
+          >
+            View all services <span className="ml-1">→</span>
+          </Link>
         </div>
 
         {status === "loading" && (
@@ -143,98 +223,17 @@ export default function Home() {
           </div>
         )}
 
-        {status === "error" && (
-          <p className="mt-8 text-sm text-slate-500">
-            Services could not be loaded right now. Reach us directly at{" "}
-            <a className="text-teal-600 underline" href={`tel:${settings?.phone || "+250783432438"}`}>
-              {settings?.phone || "+250 783 432 438"}
-            </a>.
-          </p>
-        )}
-
-        {status === "ready" && (
+        {status !== "loading" && (
           <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((s, i) => (
-              <div
-                key={s._id}
-                className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between hover:border-gray-300 transition-all"
-              >
-                <div>
-                  <span className="inline-flex h-7 w-8 items-center justify-center rounded bg-teal-400 text-xs font-bold text-navy-900 mb-4">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="text-base font-bold text-navy-900">{s.name}</h3>
-                  <p className="mt-2 text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                    {s.shortDescription || s.fullDescription}
-                  </p>
-                </div>
-                <div className="mt-6">
-                  <Link
-                    to={`/services#${s.slug}`}
-                    className="inline-flex items-center text-xs font-bold text-teal-600 hover:text-teal-700"
-                  >
-                    Details <span className="ml-1">→</span>
-                  </Link>
-                </div>
-              </div>
+            {displayServices.map((service, i) => (
+              <ServiceCard key={service._id || service.slug || i} service={service} index={i} />
             ))}
           </div>
         )}
       </section>
 
-      {/* 4. CLIENT FEEDBACK SECTION */}
-      <section className="py-16 px-6 sm:px-12 lg:px-20 bg-slate-100/70 border-t border-b border-gray-200">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-teal-500">CLIENT FEEDBACK</p>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">
-            Trusted around Kigali
-          </h2>
-
-          <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-3">
-            {/* Testimonial 1 */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex text-amber-400 mb-3 text-xs">★★★★★</div>
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  "They installed six cameras in my shop in one day and showed me how to view them on my phone. Very clear work!"
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-bold text-navy-900">Eric N.</p>
-                <p className="text-[10px] text-slate-500">Shop owner, Nyarugenge</p>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex text-amber-400 mb-3 text-xs">★★★★★</div>
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  "My laptop would not boot and I thought I lost everything. They recovered all my files the same week!"
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-bold text-navy-900">Wivine U.</p>
-                <p className="text-[10px] text-slate-500">Student</p>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex text-amber-400 mb-3 text-xs">★★★★★</div>
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  "The internship put me on real jobs from week one. I got hired two months after finishing."
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-bold text-navy-900">Jean M.</p>
-                <p className="text-[10px] text-slate-500">Training graduate</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 4. CUSTOMER TESTIMONIALS SECTION */}
+      <TestimonialsSection />
       {/* 5. BOTTOM CTA BANNER */}
       <section className="py-12 px-6 sm:px-12 lg:px-20 bg-slate-50">
         <div className="max-w-6xl mx-auto">

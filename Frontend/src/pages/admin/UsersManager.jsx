@@ -7,12 +7,31 @@ import {
   KeyRound,
   Shield,
   Edit,
+  AlertCircle,
 } from "lucide-react";
 import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UsersManager() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: '' }
+
+  const isSuperAdmin =
+    currentUser?.role?.toLowerCase().includes("super") ||
+    currentUser?.email?.toLowerCase() === "doctorshavu@gmail.com";
+
+  const isSelf = (u) => {
+    if (!currentUser || !u) return false;
+    const currentId = String(currentUser.id || currentUser._id || "");
+    const targetId = String(u._id || u.id || "");
+    if (currentId && targetId && currentId === targetId) return true;
+    if (currentUser.email && u.email && currentUser.email.toLowerCase() === u.email.toLowerCase()) {
+      return true;
+    }
+    return false;
+  };
 
   // =========================================================
   // MODALS STATE
@@ -21,7 +40,8 @@ export default function UsersManager() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [modalError, setModalError] = useState("");
 
   // =========================================================
   // FORM DATA
@@ -51,19 +71,22 @@ export default function UsersManager() {
       setLoading(true);
 
       const res = await api.get("/users");
-
       const rawUsers = res.data.users || res.data || [];
 
-      // Filter out super-admins completely
-      const filtered = rawUsers.filter(
-        (u) =>
-          u.role?.toLowerCase() !== "super-admin" &&
-          u.role?.toLowerCase() !== "superadmin"
-      );
+      // Filter out root super-admin only if caller is standard admin
+      let filtered = rawUsers;
+      if (!isSuperAdmin) {
+        filtered = rawUsers.filter(
+          (u) =>
+            u.role?.toLowerCase() !== "super-admin" &&
+            u.role?.toLowerCase() !== "superadmin"
+        );
+      }
 
       setUsers(filtered);
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to fetch users");
+      const msg = err.response?.data?.message || "Failed to fetch staff accounts";
+      setFeedback({ type: "error", message: msg });
     } finally {
       setLoading(false);
     }
@@ -79,12 +102,17 @@ export default function UsersManager() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    setModalError("");
 
     try {
-      await api.post("/users", createData);
+      await api.post("/users", {
+        name: createData.name.trim(),
+        email: createData.email.trim(),
+        password: createData.password,
+        role: createData.role,
+      });
 
       setShowCreateModal(false);
-
       setCreateData({
         name: "",
         email: "",
@@ -92,12 +120,13 @@ export default function UsersManager() {
         role: "admin",
       });
 
+      setFeedback({ type: "success", message: "Staff account created successfully." });
       fetchUsers();
     } catch (err) {
-      alert(
+      setModalError(
         err.response?.data?.message ||
           err.response?.data?.errors?.[0]?.message ||
-          "Error creating user"
+          "Error creating staff account"
       );
     }
   };
@@ -107,7 +136,8 @@ export default function UsersManager() {
   // =========================================================
 
   const handleOpenEditModal = (user) => {
-    setSelectedUserId(user._id);
+    setSelectedUser(user);
+    setModalError("");
 
     setEditData({
       name: user.name,
@@ -124,17 +154,32 @@ export default function UsersManager() {
 
   const handleEditUser = async (e) => {
     e.preventDefault();
+    setModalError("");
+
+    if (!selectedUser) return;
 
     try {
-      await api.patch(`/users/${selectedUserId}`, editData);
+      const payload = {
+        name: editData.name.trim(),
+        email: editData.email.trim(),
+      };
+
+      // If user is editing someone else OR is superadmin, send role
+      // If editing self as non-superadmin, do not include role so RLS does not reject
+      if (!isSelf(selectedUser) || isSuperAdmin) {
+        payload.role = editData.role;
+      }
+
+      await api.patch(`/users/${selectedUser._id}`, payload);
 
       setShowEditModal(false);
-      setSelectedUserId(null);
+      setSelectedUser(null);
 
+      setFeedback({ type: "success", message: "Account updated successfully." });
       fetchUsers();
     } catch (err) {
-      alert(
-        err.response?.data?.message || "Failed to update user details"
+      setModalError(
+        err.response?.data?.message || "Failed to update account details"
       );
     }
   };
@@ -144,14 +189,29 @@ export default function UsersManager() {
   // =========================================================
 
   const handleToggleStatus = async (user) => {
+    if (isSelf(user)) {
+      setFeedback({
+        type: "error",
+        message: "Row-Level Security: You cannot deactivate your own account.",
+      });
+      return;
+    }
+
     try {
       await api.patch(`/users/${user._id}`, {
         isActive: !user.isActive,
       });
 
+      setFeedback({
+        type: "success",
+        message: `Account ${user.isActive ? "disabled" : "activated"} successfully.`,
+      });
       fetchUsers();
     } catch (err) {
-      alert("Failed to update status");
+      setFeedback({
+        type: "error",
+        message: err.response?.data?.message || "Failed to update status",
+      });
     }
   };
 
@@ -161,19 +221,22 @@ export default function UsersManager() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    setModalError("");
+
+    if (!selectedUser) return;
 
     try {
-      await api.patch(`/users/${selectedUserId}/password`, {
+      await api.patch(`/users/${selectedUser._id}/password`, {
         password: newPassword,
       });
 
       setShowPasswordModal(false);
       setNewPassword("");
-      setSelectedUserId(null);
+      setSelectedUser(null);
 
-      alert("Password updated successfully");
+      setFeedback({ type: "success", message: "Password updated successfully." });
     } catch (err) {
-      alert(
+      setModalError(
         err.response?.data?.message || "Failed to update password"
       );
     }
@@ -183,23 +246,32 @@ export default function UsersManager() {
   // DELETE USER
   // =========================================================
 
-  const handleDeleteUser = async (id) => {
+  const handleDeleteUser = async (user) => {
+    if (isSelf(user)) {
+      setFeedback({
+        type: "error",
+        message: "Row-Level Security: You cannot delete your own account.",
+      });
+      return;
+    }
+
     if (
       !window.confirm(
-        "Are you sure you want to delete this staff user?"
+        `Are you sure you want to delete the staff account for "${user.name}"?`
       )
     ) {
       return;
     }
 
     try {
-      await api.delete(`/users/${id}`);
-
+      await api.delete(`/users/${user._id}`);
+      setFeedback({ type: "success", message: "Staff account deleted successfully." });
       fetchUsers();
     } catch (err) {
-      alert(
-        err.response?.data?.message || "Failed to delete user"
-      );
+      setFeedback({
+        type: "error",
+        message: err.response?.data?.message || "Failed to delete user",
+      });
     }
   };
 
@@ -209,7 +281,7 @@ export default function UsersManager() {
 
   const closeCreateModal = () => {
     setShowCreateModal(false);
-
+    setModalError("");
     setCreateData({
       name: "",
       email: "",
@@ -220,13 +292,15 @@ export default function UsersManager() {
 
   const closeEditModal = () => {
     setShowEditModal(false);
-    setSelectedUserId(null);
+    setSelectedUser(null);
+    setModalError("");
   };
 
   const closePasswordModal = () => {
     setShowPasswordModal(false);
-    setSelectedUserId(null);
+    setSelectedUser(null);
     setNewPassword("");
+    setModalError("");
   };
 
   // =========================================================
@@ -253,13 +327,38 @@ export default function UsersManager() {
 
         {/* Add Staff Button */}
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setModalError("");
+            setShowCreateModal(true);
+          }}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:w-auto"
         >
           <UserPlus size={17} />
           <span>Add Staff Account</span>
         </button>
       </div>
+
+      {/* Action Feedback Banner */}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between rounded-xl p-4 text-sm font-medium transition-all ${
+            feedback.type === "success"
+              ? "bg-teal-50 text-teal-900 border border-teal-200"
+              : "bg-red-50 text-red-900 border border-red-200"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertCircle size={18} className="shrink-0" />
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-gray-400 hover:text-gray-600 p-1"
+          >
+            <XCircle size={16} />
+          </button>
+        </div>
+      )}
 
       {/* ===================================================== */}
       {/* LOADING                                               */}
@@ -375,8 +474,15 @@ export default function UsersManager() {
                         </td>
                         {/* Name */}
                         <td className="max-w-[220px] px-6 py-4">
-                          <div className="truncate font-medium text-gray-900">
-                            {u.name}
+                          <div className="flex items-center gap-2">
+                            <span className="truncate font-medium text-gray-900">
+                              {u.name}
+                            </span>
+                            {isSelf(u) && (
+                              <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 shrink-0">
+                                You
+                              </span>
+                            )}
                           </div>
                         </td>
 
@@ -420,9 +526,7 @@ export default function UsersManager() {
                           <div className="flex justify-end gap-3">
                             {/* Edit */}
                             <button
-                              onClick={() =>
-                                handleOpenEditModal(u)
-                              }
+                              onClick={() => handleOpenEditModal(u)}
                               className="rounded-md p-1.5 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
                               title="Edit User"
                               aria-label="Edit User"
@@ -433,7 +537,8 @@ export default function UsersManager() {
                             {/* Password */}
                             <button
                               onClick={() => {
-                                setSelectedUserId(u._id);
+                                setSelectedUser(u);
+                                setModalError("");
                                 setShowPasswordModal(true);
                               }}
                               className="rounded-md p-1.5 text-amber-600 transition hover:bg-amber-50 hover:text-amber-800"
@@ -444,16 +549,25 @@ export default function UsersManager() {
                             </button>
 
                             {/* Delete */}
-                            <button
-                              onClick={() =>
-                                handleDeleteUser(u._id)
-                              }
-                              className="rounded-md p-1.5 text-red-500 transition hover:bg-red-50 hover:text-red-700"
-                              title="Delete User"
-                              aria-label="Delete User"
-                            >
-                              <Trash2 size={17} />
-                            </button>
+                            {isSelf(u) ? (
+                              <button
+                                disabled
+                                className="cursor-not-allowed rounded-md p-1.5 text-gray-300"
+                                title="You cannot delete your own account"
+                                aria-label="Cannot delete own account"
+                              >
+                                <Trash2 size={17} />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteUser(u)}
+                                className="rounded-md p-1.5 text-red-500 transition hover:bg-red-50 hover:text-red-700"
+                                title="Delete User"
+                                aria-label="Delete User"
+                              >
+                                <Trash2 size={17} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -482,9 +596,16 @@ export default function UsersManager() {
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-sm font-semibold text-gray-900">
-                        {u.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate text-sm font-semibold text-gray-900">
+                          {u.name}
+                        </h3>
+                        {isSelf(u) && (
+                          <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 shrink-0">
+                            You
+                          </span>
+                        )}
+                      </div>
 
                       <p className="mt-1 break-all text-xs text-gray-500">
                         {u.email}
@@ -550,7 +671,8 @@ export default function UsersManager() {
                     {/* Password */}
                     <button
                       onClick={() => {
-                        setSelectedUserId(u._id);
+                        setSelectedUser(u);
+                        setModalError("");
                         setShowPasswordModal(true);
                       }}
                       className="flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 px-2 py-2.5 text-xs font-medium text-amber-600 transition hover:bg-amber-50"
@@ -560,13 +682,24 @@ export default function UsersManager() {
                     </button>
 
                     {/* Delete */}
-                    <button
-                      onClick={() => handleDeleteUser(u._id)}
-                      className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 px-2 py-2.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
-                    >
-                      <Trash2 size={14} />
-                      <span>Delete</span>
-                    </button>
+                    {isSelf(u) ? (
+                      <button
+                        disabled
+                        className="cursor-not-allowed flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-2 py-2.5 text-xs font-medium text-gray-300"
+                        title="You cannot delete your own account"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteUser(u)}
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 px-2 py-2.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -603,6 +736,13 @@ export default function UsersManager() {
                 <XCircle size={20} />
               </button>
             </div>
+
+            {modalError && (
+              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200 flex items-center gap-2">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form
               onSubmit={handleCreateUser}
@@ -694,6 +834,7 @@ export default function UsersManager() {
                 >
                   <option value="admin">Admin</option>
                   <option value="editor">Editor</option>
+                  {isSuperAdmin && <option value="super-admin">Super Admin</option>}
                 </select>
               </div>
 
@@ -748,6 +889,13 @@ export default function UsersManager() {
               </button>
             </div>
 
+            {modalError && (
+              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200 flex items-center gap-2">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <form
               onSubmit={handleEditUser}
               className="space-y-4"
@@ -798,19 +946,36 @@ export default function UsersManager() {
                   Role
                 </label>
 
-                <select
-                  value={editData.role}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      role: e.target.value,
-                    })
-                  }
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                </select>
+                {isSelf(selectedUser) && !isSuperAdmin ? (
+                  <div className="mt-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium capitalize text-gray-700">
+                        {editData.role}
+                      </span>
+                      <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600">
+                        Locked
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      Row-Level Security prohibits modifying your own role.
+                    </p>
+                  </div>
+                ) : (
+                  <select
+                    value={editData.role}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        role: e.target.value,
+                      })
+                    }
+                    className="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    {isSuperAdmin && <option value="super-admin">Super Admin</option>}
+                  </select>
+                )}
               </div>
 
               {/* Buttons */}
@@ -870,6 +1035,13 @@ export default function UsersManager() {
                 <XCircle size={20} />
               </button>
             </div>
+
+            {modalError && (
+              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200 flex items-center gap-2">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form
               onSubmit={handleResetPassword}

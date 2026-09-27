@@ -17,6 +17,10 @@ function requireAuth(req, res, next) {
   }
 }
 
+const RESERVED_SUPERADMIN_EMAIL = (
+  process.env.SUPERADMIN_EMAIL || "doctorshavu@gmail.com"
+).toLowerCase().trim();
+
 // Fixed case-insensitivity and standard role inheritance
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -24,11 +28,14 @@ function requireRole(...roles) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    const userRole = req.user.role.toLowerCase();
-    const normalizedRoles = roles.map((r) => r.toLowerCase());
+    const userRole = String(req.user.role).toLowerCase().trim().replace(/[-_ ]/g, "");
+    const userEmail = (req.user.email || "").toLowerCase().trim();
+    const isSuper = userRole === "superadmin" || userEmail === RESERVED_SUPERADMIN_EMAIL;
+
+    const normalizedRoles = roles.map((r) => String(r).toLowerCase().trim().replace(/[-_ ]/g, ""));
 
     // Allow explicit matching OR allow super-admin everywhere
-    if (!normalizedRoles.includes(userRole) && userRole !== "super-admin") {
+    if (!normalizedRoles.includes(userRole) && !isSuper) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 

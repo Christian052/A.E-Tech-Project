@@ -6,64 +6,82 @@
 
 const RESERVED_SUPERADMIN_EMAIL = (
   process.env.SUPERADMIN_EMAIL || "doctorshavu@gmail.com"
-).toLowerCase();
+).toLowerCase().trim();
 
 /**
  * Role hierarchy levels for row-level permissions:
  * super-admin (3) > admin (2) > editor (1) > viewer (0)
  */
 const ROLE_WEIGHTS = {
-  "super-admin": 3,
   superadmin: 3,
+  "super-admin": 3,
+  "super_admin": 3,
   admin: 2,
+  administrator: 2,
   editor: 1,
   viewer: 0,
 };
 
-function getRoleWeight(role) {
+function normalizeRole(role) {
+  if (!role) return "viewer";
+  const cleaned = String(role).toLowerCase().trim().replace(/[-_ ]/g, "");
+  if (cleaned.startsWith("super")) return "super-admin";
+  if (cleaned.startsWith("admin")) return "admin";
+  if (cleaned.startsWith("edit")) return "editor";
+  return cleaned;
+}
+
+function getRoleWeight(role, email = "") {
+  if (email && email.toLowerCase().trim() === RESERVED_SUPERADMIN_EMAIL) {
+    return 3;
+  }
   if (!role) return 0;
-  return ROLE_WEIGHTS[role.toLowerCase()] ?? 0;
+  const cleaned = String(role).toLowerCase().trim().replace(/[-_ ]/g, "");
+  if (cleaned.startsWith("super")) return 3;
+  if (cleaned.startsWith("admin")) return 2;
+  if (cleaned.startsWith("edit")) return 1;
+  return ROLE_WEIGHTS[cleaned] ?? 0;
 }
 
 /**
  * Enforce Row-Level Security on User Documents
  * - Prevents self-deletion (locking oneself out)
  * - Prevents editing/deleting reserved bootstrap super-admin
- * - Prevents horizontal privilege escalation (e.g., standard admin modifying a super-admin)
- * - Prevents vertical privilege escalation (assigning a role higher than one's own)
+ * - Prevents horizontal/vertical privilege escalation beyond caller's tier
  */
 function enforceUserRLS(action = "update") {
   return (req, res, next) => {
     const callerId = req.user?.sub;
-    const callerRole = req.user?.role?.toLowerCase();
-    const callerWeight = getRoleWeight(callerRole);
+    const callerEmail = (req.user?.email || "").toLowerCase().trim();
+    const callerRole = req.user?.role;
+    const callerWeight = getRoleWeight(callerRole, callerEmail);
     const targetId = req.params.id;
 
     // 1. Prevent self-deletion
-    if (action === "delete" && callerId && targetId && callerId === targetId) {
+    if (action === "delete" && callerId && targetId && String(callerId) === String(targetId)) {
       return res.status(400).json({
         success: false,
         message: "Row-Level Security: You cannot delete your own account.",
       });
     }
 
-    // 2. Prevent role escalation if role is being assigned
+    // 2. Prevent vertical privilege escalation: caller cannot assign a role higher than their own
     if (req.body && req.body.role) {
-      const requestedRole = req.body.role.toLowerCase();
+      const requestedRole = req.body.role;
       const requestedWeight = getRoleWeight(requestedRole);
 
-      // Only super-admin can create/promote to admin or super-admin
-      if (requestedWeight >= callerWeight && callerWeight < 3) {
+      // Caller cannot assign a role higher than their own tier (e.g. admin cannot assign super-admin)
+      if (requestedWeight > callerWeight) {
         return res.status(403).json({
           success: false,
-          message: "Row-Level Security: You cannot assign a role equal to or higher than your own.",
+          message: "Row-Level Security: You cannot assign a role higher than your own.",
         });
       }
     }
 
     // 3. Prevent self role/status modification for non-superadmins
-    if (action === "update" && callerId === targetId && callerWeight < 3) {
-      if (req.body.role && req.body.role.toLowerCase() !== callerRole) {
+    if (action === "update" && callerId && targetId && String(callerId) === String(targetId) && callerWeight < 3) {
+      if (req.body.role && normalizeRole(req.body.role) !== normalizeRole(callerRole)) {
         return res.status(403).json({
           success: false,
           message: "Row-Level Security: You cannot change your own role.",
@@ -86,13 +104,18 @@ function enforceUserRLS(action = "update") {
  */
 function protectReservedSuperAdmin(targetUser) {
   if (!targetUser) return false;
-  const email = (targetUser.email || "").toLowerCase();
-  const role = (targetUser.role || "").toLowerCase();
+  const email = (targetUser.email || "").toLowerCase().trim();
+  const role = normalizeRole(targetUser.role);
   return (
     email === RESERVED_SUPERADMIN_EMAIL ||
-    role === "super-admin" ||
-    role === "superadmin"
+    role === "super-admin"
   );
+}
+
+function isReservedSuperAdmin(targetUser) {
+  if (!targetUser) return false;
+  const email = (targetUser.email || "").toLowerCase().trim();
+  return email === RESERVED_SUPERADMIN_EMAIL;
 }
 
 /**
@@ -101,8 +124,8 @@ function protectReservedSuperAdmin(targetUser) {
  * strictly to admin and super-admin roles.
  */
 function enforceRowDeletionSecurity(req, res, next) {
-  const role = req.user?.role?.toLowerCase();
-  if (role === "admin" || role === "super-admin" || role === "superadmin") {
+  const callerWeight = getRoleWeight(req.user?.role, req.user?.email);
+  if (callerWeight >= 2) {
     return next();
   }
   return res.status(403).json({
@@ -129,8 +152,10 @@ function sanitizeUserRow(user) {
 module.exports = {
   enforceUserRLS,
   protectReservedSuperAdmin,
+  isReservedSuperAdmin,
   enforceRowDeletionSecurity,
   sanitizeUserRow,
   getRoleWeight,
+  normalizeRole,
   RESERVED_SUPERADMIN_EMAIL,
 };

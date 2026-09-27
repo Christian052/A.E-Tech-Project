@@ -10,7 +10,12 @@ const router = express.Router();
 
 function signAccessToken(user) {
   return jwt.sign(
-    { sub: user._id.toString(), role: user.role, name: user.name },
+    {
+      sub: user._id.toString(),
+      role: user.role,
+      email: user.email,
+      name: user.name,
+    },
     process.env.JWT_ACCESS_SECRET || "augu-smart-access-secret-2026",
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m" }
   );

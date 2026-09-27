@@ -7,6 +7,7 @@ const { userMutationLimiter } = require("../middleware/rateLimiters");
 const {
   enforceUserRLS,
   protectReservedSuperAdmin,
+  isReservedSuperAdmin,
   sanitizeUserRow,
   getRoleWeight,
   RESERVED_SUPERADMIN_EMAIL,
@@ -14,10 +15,10 @@ const {
 
 const router = express.Router();
 
-// Middleware to ensure caller is authenticated and at least an 'admin'
+// Middleware to ensure caller is authenticated and at least an 'admin' (tier >= 2)
 const requireAdminOrSuperAdmin = (req, res, next) => {
-  const role = req.user?.role?.toLowerCase();
-  if (role === "admin" || role === "super-admin" || role === "superadmin") {
+  const weight = getRoleWeight(req.user?.role, req.user?.email);
+  if (weight >= 2) {
     return next();
   }
   return res.status(403).json({
@@ -36,7 +37,7 @@ router.use(dbGuard, requireAuth, requireAdminOrSuperAdmin);
 // =========================================================================
 router.get("/", async (req, res, next) => {
   try {
-    const callerWeight = getRoleWeight(req.user?.role);
+    const callerWeight = getRoleWeight(req.user?.role, req.user?.email);
 
     // Super-admins see all staff; Admins only see accounts at or below their tier
     const query = {
@@ -44,7 +45,7 @@ router.get("/", async (req, res, next) => {
     };
 
     if (callerWeight < 3) {
-      query.role = { $nin: ["super-admin", "superadmin"] };
+      query.role = { $nin: ["super-admin", "superadmin", "super_admin"] };
     }
 
     const users = await User.find(query).sort({ createdAt: -1 });
@@ -58,7 +59,7 @@ router.get("/", async (req, res, next) => {
 // POST /api/users - Create new staff account
 // Row-Level Security & Rate Limiting:
 // - Rate limited to prevent mass account generation
-// - Enforces role hierarchy (Admins can only create editors; Super-admins can create admins/editors)
+// - Enforces role hierarchy (Admins can create admin or editor; Super-admins can create any tier)
 // =========================================================================
 router.post(
   "/",
@@ -68,7 +69,7 @@ router.post(
     body("name").trim().notEmpty().withMessage("Name is required"),
     body("email").isEmail().withMessage("Valid email is required"),
     body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
-    body("role").isIn(["admin", "editor"]).withMessage("Role must be admin or editor"),
+    body("role").optional().isIn(["admin", "editor", "super-admin", "superadmin"]).withMessage("Role must be admin or editor"),
   ],
   async (req, res, next) => {
     try {
@@ -80,7 +81,7 @@ router.post(
         });
       }
 
-      const email = req.body.email.toLowerCase();
+      const email = req.body.email.toLowerCase().trim();
       if (email === RESERVED_SUPERADMIN_EMAIL) {
         return res.status(400).json({
           success: false,
@@ -99,10 +100,10 @@ router.post(
 
       const passwordHash = await User.hashPassword(req.body.password);
       const user = await User.create({
-        name: req.body.name,
+        name: req.body.name.trim(),
         email,
         passwordHash,
-        role: req.body.role,
+        role: req.body.role || "admin",
         isActive: true,
       });
 
@@ -116,7 +117,7 @@ router.post(
 // =========================================================================
 // PATCH /api/users/:id - Update staff account details
 // Row-Level Security:
-// - Prevents updating protected superadmin accounts
+// - Prevents updating protected superadmin accounts by lower tiers
 // - Prevents assigning higher role than caller's role
 // =========================================================================
 router.patch(
@@ -125,7 +126,7 @@ router.patch(
   enforceUserRLS("update"),
   [
     body("email").optional().isEmail().withMessage("Valid email is required"),
-    body("role").optional().isIn(["admin", "editor"]).withMessage("Role must be admin or editor"),
+    body("role").optional().isIn(["admin", "editor", "super-admin", "superadmin"]).withMessage("Role must be admin or editor"),
   ],
   async (req, res, next) => {
     try {
@@ -142,10 +143,10 @@ router.patch(
         return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      const callerWeight = getRoleWeight(req.user?.role);
-      const targetWeight = getRoleWeight(target.role);
+      const callerWeight = getRoleWeight(req.user?.role, req.user?.email);
+      const targetWeight = getRoleWeight(target.role, target.email);
 
-      // Caller cannot modify a user with a higher role, or a peer superadmin (unless caller is root)
+      // Caller cannot modify a user with a higher role, or a peer superadmin (unless caller is root superadmin)
       if (targetWeight > callerWeight || (protectReservedSuperAdmin(target) && callerWeight < 3)) {
         return res.status(403).json({
           success: false,
@@ -154,15 +155,15 @@ router.patch(
       }
 
       const { name, email, role, isActive } = req.body;
-      if (email && email.toLowerCase() === RESERVED_SUPERADMIN_EMAIL) {
+      if (email && email.toLowerCase().trim() === RESERVED_SUPERADMIN_EMAIL) {
         return res.status(400).json({
           success: false,
           message: "Row-Level Security: This email address is reserved.",
         });
       }
 
-      if (name !== undefined) target.name = name;
-      if (email !== undefined) target.email = email.toLowerCase();
+      if (name !== undefined) target.name = name.trim();
+      if (email !== undefined) target.email = email.toLowerCase().trim();
       if (role !== undefined) target.role = role;
       if (isActive !== undefined) target.isActive = isActive;
 
@@ -199,8 +200,8 @@ router.patch(
         return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      const callerWeight = getRoleWeight(req.user?.role);
-      const targetWeight = getRoleWeight(target.role);
+      const callerWeight = getRoleWeight(req.user?.role, req.user?.email);
+      const targetWeight = getRoleWeight(target.role, target.email);
 
       if (targetWeight > callerWeight || (protectReservedSuperAdmin(target) && callerWeight < 3)) {
         return res.status(403).json({
@@ -223,7 +224,7 @@ router.patch(
 // Row-Level Security:
 // - Blocks self-deletion (enforced by enforceUserRLS)
 // - Blocks deletion of reserved root superadmin
-// - Blocks deletion of accounts higher or equal in tier (unless superadmin)
+// - Blocks deletion of higher tier accounts
 // =========================================================================
 router.delete(
   "/:id",
@@ -236,20 +237,30 @@ router.delete(
         return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      if (protectReservedSuperAdmin(target)) {
+      if (isReservedSuperAdmin(target)) {
         return res.status(403).json({
           success: false,
-          message: "Row-Level Security: The bootstrap super-admin account cannot be deleted.",
+          message: "Row-Level Security: The root super-admin account cannot be deleted.",
         });
       }
 
-      const callerWeight = getRoleWeight(req.user?.role);
-      const targetWeight = getRoleWeight(target.role);
+      const callerWeight = getRoleWeight(req.user?.role, req.user?.email);
+      const targetWeight = getRoleWeight(target.role, target.email);
 
-      if (targetWeight >= callerWeight && callerWeight < 3) {
+      // Caller cannot delete a user with a higher role.
+      // If caller is an admin (tier 2), they can delete accounts within their management tier (editors),
+      // while deleting other administrators requires super-admin privileges.
+      if (targetWeight > callerWeight) {
         return res.status(403).json({
           success: false,
-          message: "Row-Level Security: You cannot delete an account of equal or higher privilege.",
+          message: "Row-Level Security: You cannot delete an account of higher privilege.",
+        });
+      }
+
+      if (callerWeight < 3 && targetWeight >= 2) {
+        return res.status(403).json({
+          success: false,
+          message: "Row-Level Security: Deleting administrator accounts requires super-admin privileges. You can disable the account instead.",
         });
       }
 

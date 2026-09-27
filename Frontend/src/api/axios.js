@@ -1,7 +1,28 @@
 import axios from "axios";
 
+// Determine appropriate API base endpoint:
+// 1. Explicit environment variable (e.g. VITE_API_URL)
+// 2. Vercel deployments (*.vercel.app) -> connect directly to live Render backend
+// 3. Local / same-origin environment -> "/api"
+export const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname &&
+    window.location.hostname.includes("vercel.app")
+  ) {
+    return "https://a-e-tech-project.onrender.com/api";
+  }
+
+  return "/api";
+};
+
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: getApiBaseUrl(),
   withCredentials: true, // Send httpOnly refresh cookie
 });
 

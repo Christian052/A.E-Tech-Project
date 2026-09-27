@@ -5,6 +5,7 @@ import { z } from "zod";
 import api from "../api/axios";
 import { SkeletonProgramList } from "../components/Skeleton";
 import { useSettings } from "../hooks/useSettings";
+import { getImageUrl } from "../utils/getImageUrl";
 
 const applicationSchema = z.object({
   programId: z.string().min(1, "Please select a program"),
@@ -216,7 +217,7 @@ export default function Training() {
                       <div className="relative h-44 w-full bg-gradient-to-br from-[#031B33] to-[#004B5B] overflow-hidden flex items-center justify-center">
                         {p.imageUrl ? (
                           <img
-                            src={p.imageUrl}
+                            src={getImageUrl(p.imageUrl)}
                             alt={p.title}
                             className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                             onError={(e) => {

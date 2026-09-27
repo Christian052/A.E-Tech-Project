@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import api from "../../api/axios";
+import { getImageUrl } from "../../utils/getImageUrl";
 
 // Helper to format dates cleanly
 function formatStartDate(dateStr) {
@@ -466,7 +467,7 @@ export default function TrainingManager({ programs = [], setPrograms }) {
                 <div className="relative h-40 w-full bg-gradient-to-br from-[#031B33] to-[#004B5B] overflow-hidden flex items-center justify-center">
                   {form.imageUrl ? (
                     <img
-                      src={form.imageUrl}
+                      src={getImageUrl(form.imageUrl)}
                       alt="Course Preview"
                       className="h-full w-full object-cover"
                     />
@@ -592,7 +593,7 @@ export default function TrainingManager({ programs = [], setPrograms }) {
                     <div className="relative h-40 w-full bg-gradient-to-br from-[#031B33] to-[#004B5B] overflow-hidden flex items-center justify-center">
                       {p.imageUrl ? (
                         <img
-                          src={p.imageUrl}
+                          src={getImageUrl(p.imageUrl)}
                           alt={p.title}
                           className="h-full w-full object-cover"
                           onError={(e) => {

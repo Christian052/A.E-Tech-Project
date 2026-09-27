@@ -38,25 +38,40 @@ const uploadRoutes = getRouter(require("./routes/upload"), "upload");
 const app = express();
 app.set("trust proxy", 1);
 
-app.use("/api/upload", uploadRoutes);
-
 // Set up allowed origins without trailing slashes
 const rawOrigin = process.env.CORS_ORIGIN || "https://augusmart.vercel.app";
 const allowedOrigins = rawOrigin.split(",").map((url) => url.trim().replace(/\/$/, ""));
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like server-to-server or mobile apps)
-      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked for origin: ${origin}`));
-      }
-    },
-    credentials: true,
-  })
-);
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  const clean = origin.replace(/\/$/, "").toLowerCase();
+  if (allowedOrigins.some((o) => clean === o.toLowerCase())) return true;
+  if (
+    clean.includes("vercel.app") ||
+    clean.includes("run.app") ||
+    clean.includes("localhost") ||
+    clean.includes("127.0.0.1")
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Configure Helmet to allow cross-origin fetching of static images
 app.use(
@@ -98,7 +113,8 @@ app.use("/api/applications", applicationsRoutes);
 app.use("/api/contact", contactRoutes); 
 app.use("/api/settings", settingsRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
-app.use("/api/users", usersRoutes); 
+app.use("/api/users", usersRoutes);
+app.use("/api/upload", uploadRoutes); 
 
 app.use(notFound);
 app.use(errorHandler);

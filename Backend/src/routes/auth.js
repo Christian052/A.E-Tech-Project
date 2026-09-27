@@ -1,20 +1,12 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
-const rateLimit = require("express-rate-limit");
 const User = require("../models/User");
 const dbGuard = require("../middleware/dbGuard");
+const { requireAuth } = require("../middleware/auth");
+const { authLoginLimiter, authRefreshLimiter } = require("../middleware/rateLimiters");
 
 const router = express.Router();
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-  message: { success: false, message: "Too many login attempts. Please try again later." },
-});
 
 function signAccessToken(user) {
   return jwt.sign(
@@ -51,7 +43,7 @@ function setRefreshCookie(res, token) {
 router.post(
   "/login",
   dbGuard,
-  loginLimiter,
+  authLoginLimiter,
   [body("email").isEmail().withMessage("Valid email is required"), body("password").notEmpty().withMessage("Password is required")],
   async (req, res, next) => {
     try {
@@ -81,19 +73,37 @@ router.post(
 );
 
 // POST /api/auth/refresh
-router.post("/refresh", dbGuard, async (req, res, next) => {
+router.post("/refresh", dbGuard, authRefreshLimiter, async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
     if (!token) return res.status(401).json({ success: false, message: "No refresh token" });
 
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET || "augu-smart-refresh-secret-2026");
     const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ success: false, message: "User not found" });
 
     const accessToken = signAccessToken(user);
-    res.status(200).json({ accessToken });
+    res.status(200).json({
+      accessToken,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    });
   } catch (err) {
     return res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
+  }
+});
+
+// GET /api/auth/me - restore active session
+router.get("/me", dbGuard, requireAuth, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.sub);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (err) {
+    next(err);
   }
 });
 

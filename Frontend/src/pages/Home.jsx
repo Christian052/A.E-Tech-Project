@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
-import { SkeletonServiceCardGrid } from "../components/Skeleton";
-import ServiceCard from "../components/ServiceCard";
+import ServicesSection from "../components/ServicesSection";
 import TestimonialsSection from "../components/TestimonialsSection";
 import { mergeServicesWithDefaults } from "../utils/servicesData";
 import { useSettings } from "../hooks/useSettings";
@@ -198,39 +197,12 @@ export default function Home() {
       </section>
 
       {/* 3. SERVICES SECTION */}
-      <section id="services" className="py-16 px-6 sm:px-12 lg:px-20 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-teal-500">OUR SERVICES</p>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">
-              Company Offerings & Solutions
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 max-w-xl">
-              Professional computer repair, turnkey CCTV installation, and hands-on IT training tailored for businesses, schools, and individuals in Kigali.
-            </p>
-          </div>
-          <Link
-            to="/services"
-            className="inline-flex items-center text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 hover:underline shrink-0"
-          >
-            View all services <span className="ml-1">→</span>
-          </Link>
-        </div>
-
-        {status === "loading" && (
-          <div className="mt-8">
-            <SkeletonServiceCardGrid count={6} />
-          </div>
-        )}
-
-        {status !== "loading" && (
-          <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {displayServices.map((service, i) => (
-              <ServiceCard key={service._id || service.slug || i} service={service} index={i} />
-            ))}
-          </div>
-        )}
-      </section>
+      <ServicesSection
+        services={displayServices}
+        loading={status === "loading"}
+        title="Company Offerings & Solutions"
+        subtitle="Professional computer repair, turnkey CCTV installation, and structured networking tailored for businesses, schools, and individuals in Kigali."
+      />
 
       {/* 4. CUSTOMER TESTIMONIALS SECTION */}
       <TestimonialsSection />

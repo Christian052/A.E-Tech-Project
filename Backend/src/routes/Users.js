@@ -2,55 +2,68 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
 const dbGuard = require("../middleware/dbGuard");
-const { requireAuth } = require("../middleware/auth"); // Removed requireSuperAdmin import requirement
+const { requireAuth } = require("../middleware/auth");
+const { userMutationLimiter } = require("../middleware/rateLimiters");
+const {
+  enforceUserRLS,
+  protectReservedSuperAdmin,
+  sanitizeUserRow,
+  getRoleWeight,
+  RESERVED_SUPERADMIN_EMAIL,
+} = require("../middleware/rls");
 
 const router = express.Router();
 
-// The bootstrap super-admin account is identified by this reserved email.
-// It can never be created, edited, demoted, or deleted through the API -
-// only ever seeded directly via `npm run seed`.
-const RESERVED_SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || "doctorshavu@gmail.com").toLowerCase();
-
-// Middleware to ensure the authenticated user is either an 'admin' or 'super-admin'
+// Middleware to ensure caller is authenticated and at least an 'admin'
 const requireAdminOrSuperAdmin = (req, res, next) => {
   const role = req.user?.role?.toLowerCase();
   if (role === "admin" || role === "super-admin" || role === "superadmin") {
     return next();
   }
-  return res.status(403).json({ success: false, message: "Forbidden: Access restricted to administrators" });
+  return res.status(403).json({
+    success: false,
+    message: "Row-Level Security: Access restricted to administrators.",
+  });
 };
 
-// Require authentication and admin privileges across all routes in this router
+// Require database ready, auth, and admin-level privileges across this router
 router.use(dbGuard, requireAuth, requireAdminOrSuperAdmin);
 
-function toSafeUser(user) {
-  return {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    isActive: user.isActive,
-    createdAt: user.createdAt,
-  };
-}
-
-// GET /api/users - list all staff accounts, except the reserved super-admin and any super-admin role
+// =========================================================================
+// GET /api/users - List staff accounts
+// Row-Level Security: Caller only sees accounts at or below their tier.
+// The root superadmin bootstrap account is never exposed in general staff lists.
+// =========================================================================
 router.get("/", async (req, res, next) => {
   try {
-    const users = await User.find({
-      email: { $ne: RESERVED_SUPERADMIN_EMAIL },
-      role: { $nin: ["super-admin", "superadmin"] },
-    }).sort({ createdAt: -1 });
+    const callerWeight = getRoleWeight(req.user?.role);
 
-    res.status(200).json({ users: users.map(toSafeUser) });
+    // Super-admins see all staff; Admins only see accounts at or below their tier
+    const query = {
+      email: { $ne: RESERVED_SUPERADMIN_EMAIL },
+    };
+
+    if (callerWeight < 3) {
+      query.role = { $nin: ["super-admin", "superadmin"] };
+    }
+
+    const users = await User.find(query).sort({ createdAt: -1 });
+    res.status(200).json({ users: users.map(sanitizeUserRow) });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/users - create a new admin/editor account
+// =========================================================================
+// POST /api/users - Create new staff account
+// Row-Level Security & Rate Limiting:
+// - Rate limited to prevent mass account generation
+// - Enforces role hierarchy (Admins can only create editors; Super-admins can create admins/editors)
+// =========================================================================
 router.post(
   "/",
+  userMutationLimiter,
+  enforceUserRLS("create"),
   [
     body("name").trim().notEmpty().withMessage("Name is required"),
     body("email").isEmail().withMessage("Valid email is required"),
@@ -61,12 +74,27 @@ router.post(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ success: false, errors: errors.array().map((e) => ({ field: e.path, message: e.msg })) });
+        return res.status(400).json({
+          success: false,
+          errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
+        });
       }
 
       const email = req.body.email.toLowerCase();
       if (email === RESERVED_SUPERADMIN_EMAIL) {
-        return res.status(400).json({ success: false, message: "This email address is reserved" });
+        return res.status(400).json({
+          success: false,
+          message: "Row-Level Security: This email address is reserved.",
+        });
+      }
+
+      // Check if user already exists
+      const existing = await User.findOne({ email });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: "A staff account with this email address already exists.",
+        });
       }
 
       const passwordHash = await User.hashPassword(req.body.password);
@@ -78,16 +106,23 @@ router.post(
         isActive: true,
       });
 
-      res.status(201).json({ user: toSafeUser(user) });
+      res.status(201).json({ user: sanitizeUserRow(user) });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// PATCH /api/users/:id - update name/email/role/active status
+// =========================================================================
+// PATCH /api/users/:id - Update staff account details
+// Row-Level Security:
+// - Prevents updating protected superadmin accounts
+// - Prevents assigning higher role than caller's role
+// =========================================================================
 router.patch(
   "/:id",
+  userMutationLimiter,
+  enforceUserRLS("update"),
   [
     body("email").optional().isEmail().withMessage("Valid email is required"),
     body("role").optional().isIn(["admin", "editor"]).withMessage("Role must be admin or editor"),
@@ -96,22 +131,34 @@ router.patch(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ success: false, errors: errors.array().map((e) => ({ field: e.path, message: e.msg })) });
+        return res.status(400).json({
+          success: false,
+          errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
+        });
       }
 
       const target = await User.findById(req.params.id);
-      if (
-        !target ||
-        target.email === RESERVED_SUPERADMIN_EMAIL ||
-        target.role === "super-admin" ||
-        target.role === "superadmin"
-      ) {
+      if (!target) {
         return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      const callerWeight = getRoleWeight(req.user?.role);
+      const targetWeight = getRoleWeight(target.role);
+
+      // Caller cannot modify a user with a higher role, or a peer superadmin (unless caller is root)
+      if (targetWeight > callerWeight || (protectReservedSuperAdmin(target) && callerWeight < 3)) {
+        return res.status(403).json({
+          success: false,
+          message: "Row-Level Security: You do not have permission to modify this user record.",
+        });
       }
 
       const { name, email, role, isActive } = req.body;
       if (email && email.toLowerCase() === RESERVED_SUPERADMIN_EMAIL) {
-        return res.status(400).json({ success: false, message: "This email address is reserved" });
+        return res.status(400).json({
+          success: false,
+          message: "Row-Level Security: This email address is reserved.",
+        });
       }
 
       if (name !== undefined) target.name = name;
@@ -120,60 +167,98 @@ router.patch(
       if (isActive !== undefined) target.isActive = isActive;
 
       await target.save();
-      res.status(200).json({ user: toSafeUser(target) });
+      res.status(200).json({ user: sanitizeUserRow(target) });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// PATCH /api/users/:id/password - reset a user's password
+// =========================================================================
+// PATCH /api/users/:id/password - Reset staff password
+// Row-Level Security:
+// - Enforces target document access hierarchy
+// =========================================================================
 router.patch(
   "/:id/password",
+  userMutationLimiter,
+  enforceUserRLS("password"),
   [body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters")],
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ success: false, errors: errors.array().map((e) => ({ field: e.path, message: e.msg })) });
+        return res.status(400).json({
+          success: false,
+          errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
+        });
       }
 
       const target = await User.findById(req.params.id);
-      if (
-        !target ||
-        target.email === RESERVED_SUPERADMIN_EMAIL ||
-        target.role === "super-admin" ||
-        target.role === "superadmin"
-      ) {
+      if (!target) {
         return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      const callerWeight = getRoleWeight(req.user?.role);
+      const targetWeight = getRoleWeight(target.role);
+
+      if (targetWeight > callerWeight || (protectReservedSuperAdmin(target) && callerWeight < 3)) {
+        return res.status(403).json({
+          success: false,
+          message: "Row-Level Security: You do not have permission to reset this user's password.",
+        });
       }
 
       target.passwordHash = await User.hashPassword(req.body.password);
       await target.save();
-      res.status(200).json({ success: true, message: "Password updated" });
+      res.status(200).json({ success: true, message: "Password updated successfully" });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// DELETE /api/users/:id - remove a staff account
-router.delete("/:id", async (req, res, next) => {
-  try {
-    const target = await User.findById(req.params.id);
-    if (
-      !target ||
-      target.email === RESERVED_SUPERADMIN_EMAIL ||
-      target.role === "super-admin" ||
-      target.role === "superadmin"
-    ) {
-      return res.status(404).json({ success: false, message: "User not found" });
+// =========================================================================
+// DELETE /api/users/:id - Delete staff account
+// Row-Level Security:
+// - Blocks self-deletion (enforced by enforceUserRLS)
+// - Blocks deletion of reserved root superadmin
+// - Blocks deletion of accounts higher or equal in tier (unless superadmin)
+// =========================================================================
+router.delete(
+  "/:id",
+  userMutationLimiter,
+  enforceUserRLS("delete"),
+  async (req, res, next) => {
+    try {
+      const target = await User.findById(req.params.id);
+      if (!target) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      if (protectReservedSuperAdmin(target)) {
+        return res.status(403).json({
+          success: false,
+          message: "Row-Level Security: The bootstrap super-admin account cannot be deleted.",
+        });
+      }
+
+      const callerWeight = getRoleWeight(req.user?.role);
+      const targetWeight = getRoleWeight(target.role);
+
+      if (targetWeight >= callerWeight && callerWeight < 3) {
+        return res.status(403).json({
+          success: false,
+          message: "Row-Level Security: You cannot delete an account of equal or higher privilege.",
+        });
+      }
+
+      await target.deleteOne();
+      res.status(200).json({ success: true, message: "User account deleted successfully" });
+    } catch (err) {
+      next(err);
     }
-    await target.deleteOne();
-    res.status(200).json({ success: true, message: "User deleted" });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 module.exports = router;

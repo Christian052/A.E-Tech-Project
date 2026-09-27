@@ -1,120 +1,155 @@
 import { Link } from "react-router-dom";
+import {
+  Laptop,
+  Camera,
+  Network,
+  Printer,
+  GraduationCap,
+  Wrench,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
 
 export function getServiceIcon(slug = "") {
   const normalized = (slug || "").toLowerCase();
 
-  if (normalized.includes("computer") || normalized.includes("repair") || normalized.includes("hardware")) {
-    return (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v3m-1.5-1.5h3" />
-      </svg>
-    );
+  if (
+    normalized.includes("computer") ||
+    normalized.includes("repair") ||
+    normalized.includes("hardware")
+  ) {
+    return <Laptop className="h-6 w-6" />;
   }
 
-  if (normalized.includes("cctv") || normalized.includes("camera") || normalized.includes("security")) {
-    return (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        <circle cx="9" cy="12" r="2" strokeWidth="2" />
-      </svg>
-    );
+  if (
+    normalized.includes("cctv") ||
+    normalized.includes("camera") ||
+    normalized.includes("security")
+  ) {
+    return <Camera className="h-6 w-6" />;
   }
 
-  if (normalized.includes("training") || normalized.includes("internship") || normalized.includes("education") || normalized.includes("it")) {
-    return (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14v7" />
-      </svg>
-    );
+  if (
+    normalized.includes("network") ||
+    normalized.includes("internet") ||
+    normalized.includes("wifi") ||
+    normalized.includes("cabling")
+  ) {
+    return <Network className="h-6 w-6" />;
   }
 
-  if (normalized.includes("network") || normalized.includes("internet") || normalized.includes("wifi") || normalized.includes("cabling")) {
-    return (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.393 9.322c5.857-5.858 15.355-5.858 21.213 0" />
-      </svg>
-    );
+  if (
+    normalized.includes("training") ||
+    normalized.includes("internship") ||
+    normalized.includes("education") ||
+    normalized.includes("it")
+  ) {
+    return <GraduationCap className="h-6 w-6" />;
   }
 
-  if (normalized.includes("printer") || normalized.includes("photocopier") || normalized.includes("copier")) {
-    return (
-      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-      </svg>
-    );
+  if (
+    normalized.includes("printer") ||
+    normalized.includes("photocopier") ||
+    normalized.includes("copier")
+  ) {
+    return <Printer className="h-6 w-6" />;
   }
 
-  return (
-    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
+  return <Wrench className="h-6 w-6" />;
 }
 
 export default function ServiceCard({ service, index = 0 }) {
   const indexStr = String(index + 1).padStart(2, "0");
+  const categoryName = service.category || "Technical Service";
 
   return (
-    <div className="card group flex flex-col justify-between hover:border-teal-400 hover:shadow-lg transition-all duration-200">
+    <article
+      id={service.slug}
+      className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-500/50 hover:shadow-xl overflow-hidden"
+    >
+      {/* Top Accent Gradient on Hover */}
+      <div className="absolute top-0 left-0 h-1 w-0 bg-gradient-to-r from-teal-400 via-teal-500 to-[#004B5B] transition-all duration-300 group-hover:w-full" />
+
+      {/* Card Header & Body */}
       <div>
-        {/* Top bar with icon and index */}
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-500 group-hover:text-white shadow-xs">
+        {/* Unboxed Metadata & Icon Bar */}
+        <div className="flex items-center justify-between gap-4 mb-5">
+          {/* Icon Container */}
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-[#032B45] transition-all duration-300 group-hover:bg-[#031B33] group-hover:text-teal-400 group-hover:scale-105 shadow-xs shrink-0">
             {service.icon ? (
-              <img src={service.icon} alt="" className="h-6 w-6 object-contain" />
+              <img
+                src={service.icon}
+                alt=""
+                className="h-6 w-6 object-contain"
+              />
             ) : (
               getServiceIcon(service.slug)
             )}
           </div>
-          <span className="inline-flex items-center rounded-md bg-navy-50 px-2.5 py-1 text-xs font-bold text-navy-600">
-            {indexStr}
-          </span>
+
+          {/* Clean Unboxed Metadata (Zero-Pill Rule) */}
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 group-hover:text-slate-600 transition-colors">
+            <span className="uppercase tracking-wider text-[11px] text-teal-700">
+              {categoryName}
+            </span>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <span className="font-mono text-[11px] font-bold text-slate-400">
+              {indexStr}
+            </span>
+          </div>
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-navy-900 group-hover:text-teal-600 transition-colors">
-          <Link to={`/services#${service.slug}`}>
+        <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-teal-600 transition-colors">
+          <Link to={`/services#${service.slug}`} className="hover:underline focus:outline-none">
             {service.name}
           </Link>
         </h3>
 
-        {/* Description */}
-        <p className="mt-2 text-sm text-navy-600 line-clamp-3 leading-relaxed">
+        {/* Short / Full Description */}
+        <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
           {service.shortDescription || service.fullDescription}
         </p>
 
-        {/* Highlight features if available */}
+        {/* Feature Highlights / Technical Checklist */}
         {service.features && service.features.length > 0 && (
-          <ul className="mt-4 space-y-1.5 border-t border-navy-100/70 pt-3">
+          <ul className="mt-5 space-y-2 border-t border-slate-100 pt-4">
             {service.features.slice(0, 3).map((feat, idx) => (
-              <li key={idx} className="flex items-center gap-2 text-xs text-navy-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
-                <span className="truncate">{feat}</span>
+              <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700">
+                <CheckCircle2
+                  size={14}
+                  className="text-teal-500 shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <span className="leading-snug">{feat}</span>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* Card actions */}
-      <div className="mt-6 pt-4 border-t border-navy-50 flex items-center justify-between gap-3">
+      {/* Card Action Controls */}
+      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+        {/* Secondary: Details */}
         <Link
           to={`/services#${service.slug}`}
-          className="inline-flex items-center text-xs font-bold text-teal-600 hover:text-teal-700 group-hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-600 transition-colors group/link focus:outline-none"
         >
-          Details <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
+          <span>Learn details</span>
+          <ArrowRight
+            size={13}
+            className="transition-transform duration-200 group-hover/link:translate-x-1 text-teal-500"
+          />
         </Link>
+
+        {/* Primary Action Button */}
         <Link
           to={`/contact?service=${encodeURIComponent(service.name)}`}
-          className="inline-flex items-center rounded-lg bg-navy-50 hover:bg-teal-50 hover:text-teal-700 px-3 py-1.5 text-xs font-semibold text-navy-700 transition-colors"
+          className="inline-flex items-center justify-center rounded-xl bg-slate-900 hover:bg-teal-500 text-white hover:text-slate-950 px-3.5 py-2 text-xs font-bold shadow-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2"
         >
-          Inquire
+          Request Service
         </Link>
       </div>
-    </div>
+    </article>
   );
 }

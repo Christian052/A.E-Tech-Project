@@ -28,7 +28,7 @@ const getImageUrl = (url) => {
     return "https://placehold.co/400x300?text=No+Image";
   }
 
-  // Supabase / External HTTPS URLs
+  // HTTPS / Data URLs
   if (
     url.startsWith("http://") ||
     url.startsWith("https://") ||
@@ -36,14 +36,6 @@ const getImageUrl = (url) => {
   ) {
     return url;
   }
-
-  const backendBase =
-    import.meta.env.VITE_API_BASE_URL ||
-    "https://a-e-tech-project.onrender.com";
-
-  const origin = backendBase
-    .replace(/\/api.*$/, "")
-    .replace(/\/$/, "");
 
   let cleanPath = url.startsWith("/") ? url : `/${url}`;
 
@@ -55,7 +47,7 @@ const getImageUrl = (url) => {
     cleanPath = `/uploads${cleanPath}`;
   }
 
-  return `${origin}${cleanPath}`;
+  return cleanPath;
 };
 
 export default function GalleryManager({ items = [], setItems }) {

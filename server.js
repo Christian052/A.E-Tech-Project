@@ -17,6 +17,7 @@ const testimonialsRoutes = require("./Backend/src/routes/testimonials");
 const usersRoutes = require("./Backend/src/routes/Users");
 const uploadRoutes = require("./Backend/src/routes/upload");
 const { errorHandler } = require("./Backend/src/middleware/errorHandler");
+const { globalApiLimiter } = require("./Backend/src/middleware/rateLimiters");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -39,6 +40,9 @@ app.use(express.static(uploadsPathPublic));
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+// Global Rate Limiting for all /api endpoints
+app.use("/api", globalApiLimiter);
 
 // API Routes
 app.use("/api/auth", authRoutes);

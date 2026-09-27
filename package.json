@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "build": "vite build Frontend",
+    "lint": "vite build Frontend",
     "start": "node server.js"
   },
   "dependencies": {

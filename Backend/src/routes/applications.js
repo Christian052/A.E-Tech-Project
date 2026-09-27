@@ -1,5 +1,4 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator");
 
 const Application = require("../models/Application");
@@ -7,20 +6,10 @@ const TrainingProgram = require("../models/TrainingProgram");
 const dbGuard = require("../middleware/dbGuard");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { notifyAdmin } = require("../config/mailer");
+const { publicSubmissionLimiter } = require("../middleware/rateLimiters");
+const { enforceRowDeletionSecurity } = require("../middleware/rls");
 
 const router = express.Router();
-
-const applyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 8,
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-  message: {
-    success: false,
-    message: "Too many requests. Please try again later.",
-  },
-});
 
 // ============================================================
 // POST /api/applications
@@ -30,7 +19,7 @@ const applyLimiter = rateLimit({
 router.post(
   "/",
   dbGuard,
-  applyLimiter,
+  publicSubmissionLimiter,
   [
     body("programId")
       .notEmpty()
@@ -188,14 +177,14 @@ router.patch(
 
 // ============================================================
 // DELETE /api/applications/:id
-// Admin only - Delete application
+// Admin only - Delete application (Row-Level Security protected)
 // ============================================================
 
 router.delete(
   "/:id",
   dbGuard,
   requireAuth,
-  requireRole("admin"),
+  enforceRowDeletionSecurity,
   async (req, res, next) => {
     try {
       const { id } = req.params;

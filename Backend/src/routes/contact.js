@@ -1,25 +1,14 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator");
 
 const Inquiry = require("../models/Inquiry");
 const dbGuard = require("../middleware/dbGuard");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { notifyAdmin } = require("../config/mailer");
+const { publicSubmissionLimiter } = require("../middleware/rateLimiters");
+const { enforceRowDeletionSecurity } = require("../middleware/rls");
 
 const router = express.Router();
-
-const contactLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 8,
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-  message: {
-    success: false,
-    message: "Too many requests. Please try again later.",
-  },
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +19,7 @@ const contactLimiter = rateLimit({
 router.post(
   "/",
   dbGuard,
-  contactLimiter,
+  publicSubmissionLimiter,
   [
     body("name")
       .trim()
@@ -198,13 +187,13 @@ router.patch(
 |--------------------------------------------------------------------------
 | DELETE /api/contact/inquiries/:id
 |--------------------------------------------------------------------------
-| Delete inquiry
+| Delete inquiry (Row-Level Security protected)
 */
 router.delete(
   "/inquiries/:id",
   dbGuard,
   requireAuth,
-  requireRole("admin"),
+  enforceRowDeletionSecurity,
   async (req, res, next) => {
     try {
       const inquiry = await Inquiry.findByIdAndDelete(req.params.id);

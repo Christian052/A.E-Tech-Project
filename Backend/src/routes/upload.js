@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const { v2: cloudinary } = require("cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { requireAuth, requireRole } = require("../middleware/auth");
+const { uploadLimiter } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 
@@ -21,20 +23,27 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-// POST /api/upload
-router.post("/", upload.single("image"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+// POST /api/upload - staff only with rate limiting
+router.post(
+  "/",
+  uploadLimiter,
+  requireAuth,
+  requireRole("admin", "editor"),
+  upload.single("image"),
+  (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "No file uploaded" });
+      }
+      // req.file.path is the secure Cloudinary HTTPS URL
+      res.status(200).json({
+        success: true,
+        url: req.file.path,
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
     }
-    // req.file.path is the secure Cloudinary HTTPS URL
-    res.status(200).json({
-      success: true,
-      url: req.file.path,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
   }
-});
+);
 
 module.exports = router;

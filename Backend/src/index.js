@@ -86,16 +86,21 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// --- DUAL-PATH STATIC UPLOADS SERVING ---
+// --- STATIC UPLOADS & ASSETS SERVING ---
 const uploadsPathPrimary = path.join(__dirname, "uploads");
 const uploadsPathFallback = path.join(__dirname, "..", "uploads");
+const uploadsPathPublic = path.join(__dirname, "..", "..", "Frontend", "public");
+const uploadsPathPublicUploads = path.join(uploadsPathPublic, "uploads");
 
 app.use("/uploads", express.static(uploadsPathPrimary));
 app.use("/uploads", express.static(uploadsPathFallback));
+app.use("/uploads", express.static(uploadsPathPublicUploads));
+app.use("/uploads", express.static(uploadsPathPublic));
+app.use(express.static(uploadsPathPublic));
 
 // Debug logger for 404 images
 app.use("/uploads/*", (req, res) => {
-  console.log(`❌ [404 Image Not Found]: Request path "${req.originalUrl}" did not match files in ${uploadsPathPrimary}`);
+  console.log(`❌ [404 Image Not Found]: Request path "${req.originalUrl}" did not match files`);
   res.status(404).send("Image file not found on server.");
 });
 

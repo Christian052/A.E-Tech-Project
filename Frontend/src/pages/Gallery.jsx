@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { SkeletonGalleryGrid } from "../components/Skeleton";
+import { getImageUrl } from "../utils/getImageUrl";
 
 const categories = [
   "all",
@@ -11,37 +12,6 @@ const categories = [
   "training",
   "general",
 ];
-
-/* =========================================================
-   IMAGE URL HELPER
-
-   Cloudinary images are already complete HTTPS URLs,
-   so return them directly.
-
-   Legacy/local images are converted to the backend URL.
-========================================================= */
-
-const getImageUrl = (url) => {
-  if (!url) {
-    return "/A.E TECH 001.jpg";
-  }
-
-  // Complete external URLs (Cloudinary, HTTPS, HTTP, data URIs)
-  if (
-    url.startsWith("https://") ||
-    url.startsWith("http://") ||
-    url.startsWith("data:")
-  ) {
-    return url.replace(/^http:\/\//, "https://");
-  }
-
-  // Local / public root paths (e.g. /A.E TECH 001.jpg, /uploads/...)
-  if (url.startsWith("/")) {
-    return url;
-  }
-
-  return `/${url}`;
-};
 
 export default function Gallery() {
   const [items, setItems] = useState([]);

@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const path = require("path");
 
 const supabase = require("../config/supabase");
+const { uploadFileStream } = require("../utils/fileUploader");
 const GalleryItem = require("../models/GalleryItem");
 const dbGuard = require("../middleware/dbGuard");
 const { requireAuth, requireRole } = require("../middleware/auth");
@@ -102,32 +103,10 @@ router.post(
       let imageUrl = req.body.imageUrl;
 
       /* ---------------------------------------------------
-         UPLOAD TO SUPABASE STORAGE
+         UPLOAD TO STORAGE WITH RESILIENT FALLBACKS
       --------------------------------------------------- */
       if (req.file) {
-        // Create a unique filename: timestamp-originalfilename
-        const ext = path.extname(req.file.originalname);
-        const fileBaseName = path.basename(req.file.originalname, ext)
-          .replace(/[^a-zA-Z0-9]/g, "_");
-        const fileName = `${Date.now()}_${fileBaseName}${ext}`;
-
-        const { data, error } = await supabase.storage
-          .from("gallery")
-          .upload(fileName, req.file.buffer, {
-            contentType: req.file.mimetype,
-            upsert: false,
-          });
-
-        if (error) {
-          throw new Error(`Supabase upload failed: ${error.message}`);
-        }
-
-        // Generate the Public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("gallery")
-          .getPublicUrl(fileName);
-
-        imageUrl = publicUrlData.publicUrl;
+        imageUrl = await uploadFileStream(req.file, "gallery");
       }
 
       if (!imageUrl) {

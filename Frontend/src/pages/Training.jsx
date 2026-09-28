@@ -6,6 +6,7 @@ import api from "../api/axios";
 import { SkeletonProgramList } from "../components/Skeleton";
 import { useSettings } from "../hooks/useSettings";
 import { getImageUrl } from "../utils/getImageUrl";
+import { useToast } from "../context/ToastContext";
 
 const applicationSchema = z.object({
   programId: z.string().min(1, "Please select a program"),
@@ -58,6 +59,7 @@ function getCourseDefaultIcon(title = "") {
 
 export default function Training() {
   const { settings } = useSettings();
+  const { toast } = useToast();
   const [programs, setPrograms] = useState([]);
   const [status, setStatus] = useState("loading");
   const [submitResult, setSubmitResult] = useState(null);
@@ -114,15 +116,26 @@ export default function Training() {
     setSubmitResult(null);
     try {
       const { data } = await api.post("/applications", values);
+      const successMessage =
+        data.message ||
+        "Application received! Our admissions coordinator will contact you with intake details.";
       setSubmitResult({
         type: "success",
-        message: data.message || "Application received! Our admissions coordinator will contact you with intake details.",
+        message: successMessage,
+      });
+      toast.success(successMessage, {
+        title: "Application Submitted",
+        duration: 6000,
       });
       reset();
     } catch (err) {
       const message =
         err.response?.data?.message || "Something went wrong. Please try again or reach out on WhatsApp.";
       setSubmitResult({ type: "error", message });
+      toast.error(message, {
+        title: "Application Error",
+        duration: 5000,
+      });
     }
   };
 

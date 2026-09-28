@@ -86,9 +86,7 @@ export default function TrainingManager({ programs = [], setPrograms }) {
     setError(null);
 
     try {
-      const { data } = await api.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await api.post("/upload", formData);
 
       const returnedUrl = data.url || data.imageUrl;
       setForm((f) => ({ ...f, imageUrl: returnedUrl }));

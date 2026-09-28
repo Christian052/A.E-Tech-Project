@@ -3,6 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Immediate handler for preview harness and Chrome extension RPC / postMessage
+      (function() {
+        window.addEventListener('message', function(event) {
+          try {
+            var data = event.data;
+            if (data && (data === 'chrome: call method' || (typeof data === 'object' && (data.type === 'chrome: call method' || data.method === 'call method' || data.action === 'chrome: call method')))) {
+              if (event.source && typeof event.source.postMessage === 'function') {
+                event.source.postMessage({ id: data.id || null, result: 'ok', success: true }, event.origin || '*');
+              }
+            }
+          } catch (e) {}
+        }, true);
+
+        window.addEventListener('error', function(e) {
+          var msg = (e && (e.message || (e.error && e.error.message))) || '';
+          if (typeof msg === 'string' && (msg.includes('chrome: call method') || msg.includes('ResizeObserver') || msg.includes('Extension context'))) {
+            e.preventDefault && e.preventDefault();
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          var reason = (e && (e.reason && (e.reason.message || e.reason))) || '';
+          if (typeof reason === 'string' && (reason.includes('chrome: call method') || reason.includes('ResizeObserver') || reason.includes('Extension context'))) {
+            e.preventDefault && e.preventDefault();
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
     <meta
       name="description"
       content="AUGU SMART ELECTRONIC SERVICE LTD - Computer repair, printer/photocopier repair, networking, CCTV installation, and IT training & internship in Kigali, Rwanda."

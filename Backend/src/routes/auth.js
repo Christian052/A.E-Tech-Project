@@ -32,13 +32,11 @@ function signRefreshToken(user) {
 }
 
 function setRefreshCookie(res, token) {
-  const isProduction = process.env.NODE_ENV === "production";
-  
   res.cookie("refreshToken", token, {
     httpOnly: true,
     // Cross-domain cookies (Vercel -> Render) REQUIRE sameSite: "none" and secure: true
-    secure: isProduction || true, 
-    sameSite: isProduction ? "none" : "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/api/auth",
   });
@@ -69,6 +67,7 @@ router.post(
 
       res.status(200).json({
         accessToken,
+        refreshToken,
         user: { id: user._id, name: user.name, email: user.email, role: user.role },
       });
     } catch (err) {
@@ -80,7 +79,7 @@ router.post(
 // POST /api/auth/refresh
 router.post("/refresh", dbGuard, authRefreshLimiter, async (req, res, next) => {
   try {
-    const token = req.cookies?.refreshToken;
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!token) return res.status(401).json({ success: false, message: "No refresh token" });
 
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET || "augu-smart-refresh-secret-2026");
@@ -88,8 +87,12 @@ router.post("/refresh", dbGuard, authRefreshLimiter, async (req, res, next) => {
     if (!user) return res.status(401).json({ success: false, message: "User not found" });
 
     const accessToken = signAccessToken(user);
+    const newRefreshToken = signRefreshToken(user);
+    setRefreshCookie(res, newRefreshToken);
+
     res.status(200).json({
       accessToken,
+      refreshToken: newRefreshToken,
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {

@@ -5,6 +5,7 @@ import { SkeletonServiceCardGrid } from "../components/Skeleton";
 import { getServiceIcon } from "../components/ServiceCard";
 import { mergeServicesWithDefaults } from "../utils/servicesData";
 import { useSettings } from "../hooks/useSettings";
+import ServiceQuoteSection from "../components/ServiceQuoteSection";
 
 export default function Services() {
   const { settings } = useSettings();
@@ -303,6 +304,15 @@ export default function Services() {
             </div>
           </section>
         )}
+
+        {/* Service Quote Request Contact Section */}
+        <div className="mt-16">
+          <ServiceQuoteSection
+            title="Request a Custom Service Quote"
+            subtitle="Need an itemized quotation for computer diagnostics, printer servicing, or a multi-camera CCTV installation in Kigali? Send us your project details below."
+            defaultService={selectedCategory !== "all" ? selectedCategory : "computer-repair"}
+          />
+        </div>
 
         {/* Bottom Contact / Diagnostic Banner */}
         <div className="mt-16 rounded-2xl bg-gradient-to-r from-navy-900 to-navy-800 p-8 sm:p-10 text-white shadow-md">

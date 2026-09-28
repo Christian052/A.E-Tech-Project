@@ -5,6 +5,7 @@ import ServicesSection from "../components/ServicesSection";
 import TestimonialsSection from "../components/TestimonialsSection";
 import { mergeServicesWithDefaults } from "../utils/servicesData";
 import { useSettings } from "../hooks/useSettings";
+import ServiceQuoteSection from "../components/ServiceQuoteSection";
 
 const img = "/A.E TECH 001.jpg";
 
@@ -77,15 +78,15 @@ export default function Home() {
             {/* Call To Action Buttons */}
             <div className="mt-8 flex flex-wrap gap-3.5 items-center">
               {/* Primary Call-To-Action Button */}
-              <Link
-                to="/contact"
+              <a
+                href="#quote-section"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3.5 text-xs sm:text-sm font-bold text-slate-950 shadow-md transition-all duration-200 hover:shadow-teal-400/25 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-[#031B33]"
               >
-                <span>Request a Service</span>
+                <span>Request a Service Quote</span>
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-              </Link>
+              </a>
 
               {/* Secondary CTA: View Offerings Grid */}
               <a
@@ -206,7 +207,11 @@ export default function Home() {
 
       {/* 4. CUSTOMER TESTIMONIALS SECTION */}
       <TestimonialsSection />
-      {/* 5. BOTTOM CTA BANNER */}
+
+      {/* 5. REQUEST A SERVICE QUOTE CONTACT SECTION */}
+      <ServiceQuoteSection />
+
+      {/* 6. BOTTOM CTA BANNER */}
       <section className="py-12 px-6 sm:px-12 lg:px-20 bg-slate-50">
         <div className="max-w-6xl mx-auto">
           <div className="rounded-3xl bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white p-8 sm:p-12 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

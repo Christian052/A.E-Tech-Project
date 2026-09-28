@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "AUGU SMART ELECTRONIC SERVICE",
+    "slug": "augu-smart-electronic-service",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A192F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "rw.augusmart.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A192F"
+      },
+      "package": "rw.augusmart.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0D9488"
+        }
+      ]
+    ]
+  }
+}

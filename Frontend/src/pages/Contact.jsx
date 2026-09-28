@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { useSettings } from "../hooks/useSettings";
+import { useToast } from "../context/ToastContext";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -64,6 +65,7 @@ export default function Contact() {
   const nameVal = watch("name");
   const serviceVal = watch("serviceInterest");
 
+  const { toast } = useToast();
   const waNumber = (settings?.whatsapp || "+250725900732").replace(/[^\d]/g, "");
   const rawPhone = (settings?.phone || "+250783432438").replace(/[^\d+]/g, "");
 
@@ -72,11 +74,25 @@ export default function Contact() {
     setResult(null);
     try {
       const { data } = await api.post("/contact", values);
-      setResult({ type: "success", message: data.message || "Message sent successfully to the system!" });
+      const successMessage =
+        data.message ||
+        "Thank you! Your message has been sent successfully. We will contact you within 24 hours.";
+      setResult({ type: "success", message: successMessage });
+      toast.success(successMessage, {
+        title: "Message Sent Successfully",
+        duration: 5000,
+      });
       reset();
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Something went wrong. Please try again.";
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.message ||
+        "Something went wrong while sending your message. Please try again.";
       setResult({ type: "error", message: errorMsg });
+      toast.error(errorMsg, {
+        title: "Submission Error",
+        duration: 5000,
+      });
     }
   };
 
@@ -185,7 +201,8 @@ export default function Contact() {
                     NAME
                   </label>
                   <input
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:bg-white focus:outline-none"
+                    className="input-field"
+                    placeholder="Your full name"
                     {...register("name")}
                   />
                   {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
@@ -198,7 +215,8 @@ export default function Contact() {
                       PHONE
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:bg-white focus:outline-none"
+                      className="input-field"
+                      placeholder="e.g. 0783 432 438"
                       {...register("phone")}
                     />
                     {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
@@ -208,7 +226,8 @@ export default function Contact() {
                       EMAIL (OPTIONAL)
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:bg-white focus:outline-none"
+                      className="input-field"
+                      placeholder="e.g. you@example.com"
                       {...register("email")}
                     />
                     {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
@@ -221,7 +240,7 @@ export default function Contact() {
                     SERVICE INTEREST
                   </label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:bg-white focus:outline-none"
+                    className="input-field cursor-pointer"
                     {...register("serviceInterest")}
                     defaultValue=""
                   >
@@ -236,11 +255,12 @@ export default function Contact() {
                 {/* Message */}
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    MESSAGE
+                    MESSAGE / QUOTE DETAILS
                   </label>
                   <textarea
                     rows={4}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:bg-white focus:outline-none resize-y"
+                    className="input-field resize-y"
+                    placeholder="Tell us about the issue with your device or installation requirements..."
                     {...register("message")}
                   />
                   {errors.message && <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>}

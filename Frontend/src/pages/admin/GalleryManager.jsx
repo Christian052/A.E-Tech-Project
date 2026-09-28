@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import api from "../../api/axios";
+import { getImageUrl } from "../../utils/getImageUrl";
 
 const CATEGORIES = [
   "all",
@@ -10,45 +11,6 @@ const CATEGORIES = [
   "training",
   "general",
 ];
-
-/* =========================================================
-   IMAGE URL HELPER
-
-   Supabase Storage / External HTTPS URLs:
-   https://uokidhjbmmlquhijgzd.supabase.co/...
-   are returned directly.
-
-   Old/local image paths:
-   /uploads/...
-   are converted to the backend URL.
-========================================================= */
-
-const getImageUrl = (url) => {
-  if (!url) {
-    return "https://placehold.co/400x300?text=No+Image";
-  }
-
-  // HTTPS / Data URLs
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:")
-  ) {
-    return url;
-  }
-
-  let cleanPath = url.startsWith("/") ? url : `/${url}`;
-
-  // Keep existing /uploads and /public paths
-  if (
-    !cleanPath.startsWith("/uploads/") &&
-    !cleanPath.startsWith("/public/")
-  ) {
-    cleanPath = `/uploads${cleanPath}`;
-  }
-
-  return cleanPath;
-};
 
 export default function GalleryManager({ items = [], setItems }) {
   const [title, setTitle] = useState("");

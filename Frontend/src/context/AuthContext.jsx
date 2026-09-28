@@ -8,7 +8,12 @@ import {
   useEffect,
 } from "react";
 
-import api, { setAccessToken } from "../api/axios";
+import api, {
+  setAccessToken,
+  setRefreshToken,
+  getRefreshToken,
+  executeTokenRefresh,
+} from "../api/axios";
 
 const AuthContext = createContext(null);
 
@@ -18,6 +23,27 @@ export function AuthProvider({ children }) {
   // Start with true because we need to check
   // whether the user already has a valid refresh session.
   const [loading, setLoading] = useState(true);
+
+  // Synchronize state when tokens refresh or session expires globally
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+    };
+
+    const handleTokenRefreshed = (e) => {
+      if (e.detail?.user) {
+        setUser(e.detail.user);
+      }
+    };
+
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    window.addEventListener("auth:token-refreshed", handleTokenRefreshed);
+
+    return () => {
+      window.removeEventListener("auth:session-expired", handleSessionExpired);
+      window.removeEventListener("auth:token-refreshed", handleTokenRefreshed);
+    };
+  }, []);
 
   /**
    * Restore the user's session after:
@@ -30,44 +56,14 @@ export function AuthProvider({ children }) {
 
     const restoreSession = async () => {
       try {
-        /*
-         * The refresh token is stored in an HTTP-only cookie.
-         *
-         * Because axios has:
-         * withCredentials: true
-         *
-         * the browser automatically sends the cookie.
-         */
-        const { data } = await api.post("/auth/refresh");
-
-        const newAccessToken = data.accessToken || data.token;
-
-        if (!newAccessToken) {
-          throw new Error("No access token returned from refresh");
-        }
-
-        // Store the new access token in memory
-        setAccessToken(newAccessToken);
+        await executeTokenRefresh();
 
         /*
-         * If your /auth/refresh endpoint returns the user,
-         * use it directly.
-         */
-        if (mounted && data.user) {
-          setUser(data.user);
-          return;
-        }
-
-        /*
-         * If /auth/refresh does NOT return the user,
-         * try /auth/me.
+         * Fetch authenticated user details with fresh token
          */
         if (mounted) {
           const userResponse = await api.get("/auth/me");
-
-          setUser(
-            userResponse.data.user || userResponse.data
-          );
+          setUser(userResponse.data.user || userResponse.data);
         }
       } catch (error) {
         /*
@@ -75,6 +71,7 @@ export function AuthProvider({ children }) {
          * The user is genuinely logged out.
          */
         setAccessToken(null);
+        setRefreshToken(null);
 
         if (mounted) {
           setUser(null);
@@ -109,8 +106,11 @@ export function AuthProvider({ children }) {
         throw new Error("No access token received");
       }
 
-      // Save access token in memory
+      // Save tokens
       setAccessToken(data.accessToken);
+      if (data.refreshToken) {
+        setRefreshToken(data.refreshToken);
+      }
 
       // Save authenticated user
       setUser(data.user);
@@ -120,6 +120,7 @@ export function AuthProvider({ children }) {
       };
     } catch (err) {
       setAccessToken(null);
+      setRefreshToken(null);
       setUser(null);
 
       const message =
@@ -144,8 +145,9 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore network errors during logout
     } finally {
-      // Remove access token from memory
+      // Remove tokens
       setAccessToken(null);
+      setRefreshToken(null);
 
       // Remove user from React state
       setUser(null);

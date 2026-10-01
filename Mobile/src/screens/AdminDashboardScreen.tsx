@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   Pressable,
 } from "react-native";
 import { colors } from "../theme/colors";
-import { endpoints } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { useAdminStats } from "../hooks/useAppQueries";
 import { Button } from "../components/Common";
 import {
   FileText,
@@ -21,36 +21,26 @@ import {
   User as UserIcon,
   ChevronRight,
   ShieldCheck,
+  WifiOff,
+  Database,
 } from "lucide-react-native";
 
 export const AdminDashboardScreen = ({ navigation }: any) => {
   const { user, logout } = useAuth();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchStats = async () => {
-    try {
-      const data = await endpoints.getAdminStats();
-      setStats(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useAdminStats({ enabled: !!user });
 
   const handleLogout = async () => {
     await logout();
     navigation.navigate("HomeTab");
   };
 
-  if (loading && !refreshing) {
+  if (isLoading && !stats) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.teal[600]} />
@@ -63,11 +53,8 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
       style={styles.container}
       refreshControl={
         <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            fetchStats();
-          }}
+          refreshing={isFetching && !!stats}
+          onRefresh={() => refetch()}
         />
       }
     >
@@ -87,6 +74,15 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.content}>
+        {isError && (
+          <View style={styles.offlineBanner}>
+            <WifiOff size={16} color={colors.amber[500]} />
+            <Text style={styles.offlineBannerText}>
+              Offline Mode: Displaying previously cached metrics.
+            </Text>
+          </View>
+        )}
+
         {/* Quick Profile Nav Banner */}
         <Pressable
           style={styles.profileBanner}
@@ -132,9 +128,12 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>Direct API Sync</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <Database size={16} color={colors.teal[700]} />
+            <Text style={styles.noteTitle}>Offline Caching Enabled</Text>
+          </View>
           <Text style={styles.noteDesc}>
-            This mobile application is connected directly to your existing MongoDB database and Express backend. All inquiries and trainee admissions sync in real-time between the web portal and mobile app.
+            Previously fetched service requests, training applications, and staff profile records are persisted to disk using React Query's persistQueryClient and AsyncStorage. You can review them seamlessly even when disconnected.
           </Text>
         </View>
 
@@ -196,6 +195,24 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.amber[50],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.amber[300],
+    marginBottom: 16,
+    gap: 8,
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    color: colors.navy[900],
+    fontWeight: "600",
+    flex: 1,
   },
   profileBanner: {
     backgroundColor: "#FFFFFF",
@@ -275,7 +292,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: colors.navy[900],
-    marginBottom: 4,
   },
   noteDesc: {
     fontSize: 13,

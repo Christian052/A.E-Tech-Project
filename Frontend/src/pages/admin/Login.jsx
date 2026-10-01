@@ -15,12 +15,15 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useSettings } from "../../hooks/useSettings";
+import { useLanguage } from "../../context/LanguageContext";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 const logoImg = "/A.E TECH 002.png";
 
 export default function AdminLogin() {
   const { user, login, loading: authLoading } = useAuth();
   const { settings } = useSettings();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -58,13 +61,13 @@ export default function AdminLogin() {
         }
         navigate("/admin/dashboard");
       } else {
-        setError(res?.message || "Invalid email or password. Please verify your credentials.");
+        setError(res?.message || t("auth.invalidCredentials"));
       }
     } catch (err) {
       setError(
         err.response?.data?.message ||
         err.message ||
-        "Unable to authenticate. Please check your connection and try again."
+        t("common.errorOccurred")
       );
     } finally {
       setSubmitting(false);
@@ -97,17 +100,20 @@ export default function AdminLogin() {
           className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
         >
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1 text-teal-400" />
-          <span>Back to public website</span>
+          <span>{t("auth.backToWebsite")}</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500" />
-          </span>
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 hidden sm:inline">
-            Console Active · Norvege, Kigali
-          </span>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500" />
+            </span>
+            <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 hidden sm:inline">
+              Console Active · Kigali
+            </span>
+          </div>
         </div>
       </header>
 
@@ -131,14 +137,14 @@ export default function AdminLogin() {
 
               <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-300 mb-2">
                 <ShieldCheck size={13} className="text-teal-400" />
-                Authorized Staff Portal
+                {t("auth.staffPortal")}
               </span>
 
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mt-1">
-                Admin Console
+                {t("auth.adminConsole")}
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-1.5 max-w-xs mx-auto">
-                Sign in to manage services, gallery, training enrollments, and customer inquiries.
+                {t("auth.loginDesc")}
               </p>
             </div>
 
@@ -155,7 +161,7 @@ export default function AdminLogin() {
               {/* Email Input Field */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Email Address
+                  {t("auth.emailLabel")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
@@ -180,10 +186,10 @@ export default function AdminLogin() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Password
+                    {t("auth.passwordLabel")}
                   </label>
                   <span className="text-[10px] text-slate-500 font-medium">
-                    Encrypted Auth
+                    {t("auth.encryptedAuth")}
                   </span>
                 </div>
                 <div className="relative">
@@ -222,7 +228,7 @@ export default function AdminLogin() {
                     onChange={(e) => setRememberEmail(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-teal-500 focus:ring-teal-400/20 focus:ring-offset-0 transition-colors"
                   />
-                  <span className="text-xs text-slate-300">Remember email</span>
+                  <span className="text-xs text-slate-300">{t("auth.rememberEmail")}</span>
                 </label>
 
                 <a
@@ -233,7 +239,7 @@ export default function AdminLogin() {
                   rel="noreferrer"
                   className="text-xs text-teal-400 hover:text-teal-300 font-medium hover:underline"
                 >
-                  Forgot password?
+                  {t("auth.forgotPassword")}
                 </a>
               </div>
 
@@ -246,11 +252,11 @@ export default function AdminLogin() {
                 {isLoading ? (
                   <>
                     <Loader2 size={18} className="animate-spin text-slate-950" />
-                    <span>Verifying session…</span>
+                    <span>{t("auth.verifying")}</span>
                   </>
                 ) : (
                   <>
-                    <span>Sign In to Dashboard</span>
+                    <span>{t("auth.signInBtn")}</span>
                     <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -278,7 +284,7 @@ export default function AdminLogin() {
       {/* Bottom Footer Credits */}
       <footer className="relative z-10 w-full px-4 py-4 text-center text-xs text-slate-600 border-t border-white/5">
         <p>
-          © {new Date().getFullYear()} {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"} · All rights reserved.
+          © {new Date().getFullYear()} {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"} · {t("footer.allRightsReserved")}
         </p>
       </footer>
     </div>

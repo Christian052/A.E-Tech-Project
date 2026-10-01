@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { SkeletonGalleryGrid } from "../components/Skeleton";
 import { getImageUrl } from "../utils/getImageUrl";
+import { useLanguage } from "../context/LanguageContext";
 
 const categories = [
   "all",
@@ -14,6 +15,7 @@ const categories = [
 ];
 
 export default function Gallery() {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState("loading");
   const [category, setCategory] = useState("all");
@@ -70,219 +72,158 @@ export default function Gallery() {
     };
   }, [category]);
 
-  /* =========================================================
-     RETRY
-  ========================================================= */
-
-  const retryGallery = () => {
-    setStatus("loading");
-
-    /*
-     * Changing category isn't necessary.
-     * We can simply re-fetch the current category.
-     */
-
-    api
-      .get("/gallery", {
-        params:
-          category !== "all"
-            ? { category }
-            : {},
-      })
-      .then(({ data }) => {
-        const galleryItems =
-          data?.items || data || [];
-
-        setItems(
-          Array.isArray(galleryItems)
-            ? galleryItems
-            : []
-        );
-
-        setStatus("ready");
-      })
-      .catch((error) => {
-        console.error(
-          "Gallery retry failed:",
-          error
-        );
-
-        setStatus("error");
-      });
+  const getCategoryLabel = (cat) => {
+    switch (cat) {
+      case "all":
+        return t("gallery.all");
+      case "computer-repair":
+        return t("gallery.computerRepair");
+      case "printer-repair":
+        return t("gallery.printerRepair");
+      case "networking":
+        return t("gallery.networking");
+      case "cctv":
+        return t("gallery.cctv");
+      case "training":
+        return t("gallery.training");
+      default:
+        return cat;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* =====================================================
-          HERO
-      ====================================================== */}
-
-      <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] px-4 py-10 text-white sm:px-6 md:px-12 md:py-14 lg:px-20">
-        <div className="mx-auto max-w-7xl">
-          <span className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-teal-400">
-            GALLERY
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+      {/* 1. HERO HEADER */}
+      <section className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] px-6 py-14 sm:px-12 lg:px-20 text-white">
+        <div className="max-w-6xl mx-auto">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-2">
+            {t("gallery.badge")}
           </span>
 
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-            Work from the bench and the field
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+            {t("gallery.title")}
           </h1>
 
-          <p className="max-w-2xl text-sm font-light text-slate-300 md:text-base">
-            A sample of repairs, installations,
-            and training sessions from our team in
-            Kigali.
+          <p className="mt-4 text-xs sm:text-base text-slate-200 max-w-2xl leading-relaxed">
+            {t("gallery.subtitle")}
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* =====================================================
-          MAIN CONTENT
-      ====================================================== */}
-
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 md:px-12 lg:px-20">
-        {/* CATEGORY FILTERS */}
-        <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+      {/* 2. FILTER TABS & MAIN CONTENT */}
+      <main className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Category Pills */}
+        <div className="flex flex-wrap gap-2 pb-6 border-b border-slate-200">
           {categories.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`shrink-0 rounded-full px-4 py-2 font-bold uppercase tracking-wider transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
                 category === c
-                  ? "bg-teal-500 text-slate-900 shadow-xs"
+                  ? "bg-teal-500 text-slate-900 shadow-sm"
                   : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              {c.replace("-", " ")}
+              {getCategoryLabel(c)}
             </button>
           ))}
         </div>
 
-        {/* LOADING */}
-        {status === "loading" && <SkeletonGalleryGrid count={6} />}
-
-        {/* ERROR */}
-        {status === "error" && (
-          <div className="my-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-600">
-            <p>Couldn't load the gallery right now. Please refresh or try again later.</p>
-            <button
-              type="button"
-              onClick={retryGallery}
-              className="mt-4 rounded-full bg-red-600 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-red-700"
-            >
-              Try Again
-            </button>
+        {/* Loading State */}
+        {status === "loading" && (
+          <div className="mt-8">
+            <SkeletonGalleryGrid count={6} />
           </div>
         )}
 
-        {/* EMPTY STATE */}
+        {/* Empty State */}
         {status === "ready" && items.length === 0 && (
-          <div className="my-8 rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 sm:p-12">
-            No photos in this category yet. Check back soon.
+          <div className="card text-center py-16 px-4 my-8">
+            <p className="text-base font-semibold text-slate-700">
+              {t("gallery.empty")}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {t("common.noData")}
+            </p>
           </div>
         )}
 
-        {/* GALLERY GRID */}
+        {/* Gallery Grid */}
         {status === "ready" && items.length > 0 && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => {
-              const itemId = item._id || item.id;
-              const rawImageUrl = item.imageUrl || item.image || item.url || item.path || item.src;
-              const fullUrl = getImageUrl(rawImageUrl);
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mt-8">
+            {items.map((item) => (
+              <article
+                key={item._id}
+                onClick={() => setSelectedImage(item)}
+                className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200/90 shadow-xs hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
+              >
+                {/* Media */}
+                <div className="relative h-60 w-full overflow-hidden bg-slate-950">
+                  <img
+                    src={getImageUrl(item.imageUrl)}
+                    alt={item.title || "AUGU Tech Workshop Photo"}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
 
-              return (
-                <figure
-                  key={itemId}
-                  onClick={() =>
-                    setSelectedImage({
-                      url: fullUrl,
-                      title: item.title,
-                      category: item.category,
-                    })
-                  }
-                  className="card flex flex-col justify-between overflow-hidden p-0 bg-white hover:border-teal-400 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                >
-                  {/* IMAGE CONTAINER */}
-                  <div className="relative h-56 w-full overflow-hidden bg-slate-100 sm:h-60">
-                    <img
-                      src={fullUrl}
-                      alt={item.title || "Gallery Item"}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/A.E TECH 001.jpg";
-                      }}
-                    />
-
-                    {/* CATEGORY BADGE */}
-                    {item.category && (
-                      <div className="absolute top-3 left-3 rounded-full bg-navy-950/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-300 backdrop-blur-xs border border-teal-500/20">
-                        {item.category.replace("-", " ")}
-                      </div>
-                    )}
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 bg-slate-900/80 px-2 py-0.5 rounded-md">
+                      {item.category || "Workshop"}
+                    </span>
+                    <h3 className="text-sm font-bold mt-1 leading-snug line-clamp-1">
+                      {item.title}
+                    </h3>
                   </div>
+                </div>
 
-                  {/* TITLE CAPTION */}
-                  {item.title && (
-                    <figcaption className="border-t border-slate-100 bg-white p-3.5">
-                      <p className="truncate text-xs sm:text-sm font-bold text-navy-900" title={item.title}>
-                        {item.title}
-                      </p>
-                    </figcaption>
-                  )}
-                </figure>
-              );
-            })}
+                {/* Footer caption */}
+                {item.description && (
+                  <div className="p-4 bg-white border-t border-slate-100">
+                    <p className="text-xs text-slate-600 line-clamp-2">
+                      {item.description}
+                    </p>
+                  </div>
+                )}
+              </article>
+            ))}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* =====================================================
-          FULLSCREEN IMAGE MODAL
-      ====================================================== */}
-
+      {/* Image Modal Preview */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 backdrop-blur-sm sm:p-4"
-          onClick={() =>
-            setSelectedImage(null)
-          }
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setSelectedImage(null)}
         >
-          {/* CLOSE BUTTON */}
-
-          <button
-            type="button"
-            onClick={() =>
-              setSelectedImage(null)
-            }
-            className="absolute right-3 top-3 z-10 rounded-full bg-slate-800/80 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700 sm:right-5 sm:top-5"
-          >
-            ✕ Close
-          </button>
-
-          {/* IMAGE CONTAINER */}
-
           <div
-            className="relative flex max-h-[90vh] max-w-5xl flex-col items-center justify-center"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            className="relative max-w-3xl w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+            onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-3 right-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 cursor-pointer"
+            >
+              ✕
+            </button>
             <img
-              src={selectedImage.url}
-              alt={
-                selectedImage.title ||
-                "Full preview"
-              }
-              className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]"
+              src={getImageUrl(selectedImage.imageUrl)}
+              alt={selectedImage.title}
+              className="w-full max-h-[70vh] object-contain bg-black"
             />
-
-            {selectedImage.title && (
-              <p className="mt-3 max-w-[90vw] rounded-full bg-slate-900/60 px-4 py-1.5 text-center text-sm font-medium text-white">
-                {selectedImage.title}
-              </p>
-            )}
+            <div className="p-4 sm:p-6 bg-slate-900 text-white">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400">
+                {selectedImage.category}
+              </span>
+              <h3 className="text-lg font-bold mt-1">{selectedImage.title}</h3>
+              {selectedImage.description && (
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                  {selectedImage.description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

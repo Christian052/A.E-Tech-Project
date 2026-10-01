@@ -1,30 +1,32 @@
 import { useSettings } from "../hooks/useSettings";
+import { useLanguage } from "../context/LanguageContext";
 
 const img = "/A.E TECH 001.jpg";
 
 export default function About() {
   const { settings } = useSettings();
+  const { t } = useLanguage();
 
   const steps = [
     {
       num: 1,
-      title: "Diagnose",
-      desc: "We inspect and test the device or site before saying a price.",
+      title: t("about.step1Title"),
+      desc: t("about.step1Desc"),
     },
     {
       num: 2,
-      title: "Quote",
-      desc: "You get a clear cost and timeline, and you decide.",
+      title: t("about.step2Title"),
+      desc: t("about.step2Desc"),
     },
     {
       num: 3,
-      title: "Repair or install",
-      desc: "Work is done in the workshop or on-site, with real parts.",
+      title: t("about.step3Title"),
+      desc: t("about.step3Desc"),
     },
     {
       num: 4,
-      title: "Hand over",
-      desc: "We show you what changed and how to keep it working.",
+      title: t("about.step4Title"),
+      desc: t("about.step4Desc"),
     },
   ];
 
@@ -34,13 +36,13 @@ export default function About() {
       <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-6 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto">
           <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-2 sm:mb-3">
-            ABOUT US
+            {t("about.badge")}
           </span>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 max-w-2xl leading-tight">
-            A workshop built on honest diagnostics
+            {t("about.title")}
           </h1>
           <p className="text-slate-300 text-xs sm:text-base font-normal max-w-2xl leading-relaxed">
-            {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"}, known locally as Computer Universe, serves homes, shops and offices across Kigali from our bench in Norvege, Karama.
+            {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"}, {t("about.subtitle")}
           </p>
         </div>
       </div>
@@ -53,69 +55,67 @@ export default function About() {
           <div className="lg:col-span-7 space-y-8 sm:space-y-10">
             {/* Our Story */}
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4">Our story</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4">{t("about.storyTitle")}</h2>
               <div className="space-y-3 sm:space-y-4 text-slate-600 text-xs sm:text-base leading-relaxed">
-                <p>
-                  We started with a bench, a soldering iron and a simple rule: tell the customer what is actually wrong before charging anything. That rule turned into a workshop handling laptops, desktops, printers, office networks and CCTV systems across Nyarugenge and beyond.
-                </p>
-                <p>
-                  Today the same bench also trains people. Our training and internship line puts students on live repairs and real installations, because IT skills are learned with your hands, not only from slides.
-                </p>
+                <p>{t("about.storyP1")}</p>
+                <p>{t("about.storyP2")}</p>
               </div>
             </div>
 
-            {/* How We Work Steps */}
+            {/* How We Work (4 Simple Steps) */}
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 sm:mb-6">How we work</h2>
-              <div className="space-y-4 sm:space-y-6">
-                {steps.map((step) => (
-                  <div key={step.num} className="flex items-start gap-3 sm:gap-4">
-                    <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 border border-slate-200">
-                      {step.num}
-                    </span>
-                    <div>
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-900">{step.title}</h3>
-                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{step.desc}</p>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 sm:mb-6">{t("about.howWeWork")}</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {steps.map((s) => (
+                  <div key={s.num} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-50 text-teal-700 font-bold text-xs">
+                        {s.num}
+                      </span>
+                      <h3 className="font-bold text-slate-900 text-sm">{s.title}</h3>
                     </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-normal pl-10">{s.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Right Column (Featured Image & Location Card) */}
+          {/* Right Column (Visual Image & Bench Values) */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Workshop Photo Card */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
               <img
                 src={img}
-                alt="Technician at work on hardware repair"
-                className="h-64 sm:h-80 md:h-96 w-full object-cover"
+                alt="Workshop workbench in Kigali"
+                className="h-64 sm:h-72 w-full object-cover"
               />
+              <div className="p-4 sm:p-5 bg-white border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-900">{t("common.workshop")}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{settings?.address || "Norvege, Karama, Kigali"}</p>
+              </div>
             </div>
 
-            {/* Visit Us Info Box */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Visit the workshop</h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                  {settings?.address || "Kigali - Nyarugenge - Norvege (Karama, Kigali), Rwanda"}
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {settings?.hours?.days || "Mon - Fri"}: {settings?.hours?.open || "10:00 AM"} – {settings?.hours?.close || "6:00 PM"}
-                </p>
-              </div>
-
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  settings?.address || "Kigali Nyarugenge Karama"
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#032B45] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#021E31] transition-colors"
-              >
-                Get directions & contact
-              </a>
+            {/* Why Trust Us Box */}
+            <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-5 sm:p-6">
+              <h3 className="text-sm font-bold text-teal-900 mb-2">{t("about.whyTrustUs")}</h3>
+              <ul className="space-y-2 text-xs text-teal-800">
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-600 font-bold">✓</span>
+                  <span>{t("about.trust1")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-600 font-bold">✓</span>
+                  <span>{t("about.trust2")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-600 font-bold">✓</span>
+                  <span>{t("about.trust3")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-600 font-bold">✓</span>
+                  <span>{t("about.trust4")}</span>
+                </li>
+              </ul>
             </div>
           </div>
 

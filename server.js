@@ -1,4 +1,5 @@
 require("dotenv").config();
+const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -36,15 +37,20 @@ app.use("/uploads", express.static(uploadsPathPrimary));
 app.use("/uploads", express.static(uploadsPathPublic));
 app.use(express.static(uploadsPathPublic));
 
-// Health check
+// 1. Health check (Crucial for Cloud Run liveness & startup probes)
+// Must be unthrottled and declared before rate limiters!
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Global Rate Limiting for all /api endpoints
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// 2. Global Rate Limiting for /api endpoints
 app.use("/api", globalApiLimiter);
 
-// API Routes
+// 3. API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/services", servicesRoutes);
 app.use("/api/gallery", galleryRoutes);
@@ -56,56 +62,92 @@ app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// Error handler for API routes
+// Error handler for unmatched API routes
 app.use("/api", (req, res, next) => {
   res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
+
 app.use(errorHandler);
 
-async function startServer() {
-  await connectDB();
+const distPath = path.resolve(__dirname, "Frontend", "dist");
+const hasDist = fs.existsSync(path.join(distPath, "index.html"));
 
-  if (!isProd) {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      root: path.resolve(__dirname, "Frontend"),
-      server: {
-        middlewareMode: true,
-        host: "0.0.0.0",
-        port: 3000,
-      },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+async function setupFrontendAndListen() {
+  if (!isProd && !hasDist) {
+    // Development mode with dynamic Vite middleware
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        root: path.resolve(__dirname, "Frontend"),
+        server: {
+          middlewareMode: true,
+          host: "0.0.0.0",
+          port: 3000,
+        },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
 
-    // SPA fallback in development mode
-    app.use("*", async (req, res, next) => {
-      if (req.method !== "GET" || req.path.startsWith("/api")) return next();
-      try {
-        const fs = require("fs");
-        let template = fs.readFileSync(path.resolve(__dirname, "Frontend", "index.html"), "utf-8");
-        template = await vite.transformIndexHtml(req.originalUrl, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(template);
-      } catch (e) {
-        if (vite.ssrFixStacktrace) vite.ssrFixStacktrace(e);
-        next(e);
-      }
-    });
+      // SPA fallback in development mode
+      app.use("*", async (req, res, next) => {
+        if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+        try {
+          let template = fs.readFileSync(path.resolve(__dirname, "Frontend", "index.html"), "utf-8");
+          template = await vite.transformIndexHtml(req.originalUrl, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          if (vite.ssrFixStacktrace) vite.ssrFixStacktrace(e);
+          next(e);
+        }
+      });
+    } catch (e) {
+      console.error("[server] Failed to load Vite development middleware:", e);
+    }
   } else {
-    const distPath = path.resolve(__dirname, "Frontend", "dist");
+    // Production mode or built dist available
+    console.log(`[server] Serving static production build from ${distPath}`);
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) return next();
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(200).send("AUGU SMART ELECTRONIC SERVICE");
+      }
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[server] AUGU SMART ELECTRONIC SERVICE running on http://0.0.0.0:${PORT}`);
+  // Bind port immediately to guarantee Cloud Run health check passes even if DB takes time to connect
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[server] AUGU SMART ELECTRONIC SERVICE listening on http://0.0.0.0:${PORT}`);
+  });
+
+  // Connect to DB asynchronously (does not block HTTP listening)
+  connectDB().catch((err) => {
+    console.warn("[db] Async connection error:", err.message);
+  });
+
+  // Graceful shutdown handling for Cloud Run containers
+  process.on("SIGTERM", () => {
+    console.log("[server] SIGTERM signal received: closing HTTP server");
+    server.close(() => {
+      console.log("[server] HTTP server closed");
+      process.exit(0);
+    });
+  });
+
+  process.on("SIGINT", () => {
+    console.log("[server] SIGINT signal received: closing HTTP server");
+    server.close(() => {
+      console.log("[server] HTTP server closed");
+      process.exit(0);
+    });
   });
 }
 
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
+setupFrontendAndListen().catch((err) => {
+  console.error("[server] Fatal error starting server:", err);
 });
 
 module.exports = app;

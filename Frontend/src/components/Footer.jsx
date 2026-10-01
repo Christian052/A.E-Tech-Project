@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
+import { useLanguage } from "../context/LanguageContext";
 
 const img = "/A.E TECH 002.png";
 
 export default function Footer() {
   const { settings } = useSettings();
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
 
   return (
@@ -20,7 +22,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="mb-3 font-semibold text-white">Contact</h3>
+          <h3 className="mb-3 font-semibold text-white">{t("nav.contact")}</h3>
           <ul className="space-y-2 text-sm text-navy-300">
             <li>
               <a className="hover:text-teal-300" href={`tel:${settings?.phone || "+250783432438"}`}>
@@ -43,24 +45,24 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              {settings?.hours?.days || "Mon-Fri"}: {settings?.hours?.open || "10:00"} - {settings?.hours?.close || "18:00"}
+              {t("common.workingHours")}: {settings?.hours?.days || "Mon-Fri"}: {settings?.hours?.open || "10:00"} - {settings?.hours?.close || "18:00"}
             </li>
           </ul>
         </div>
 
         <div>
-          <h3 className="mb-3 font-semibold text-white">Quick Links</h3>
+          <h3 className="mb-3 font-semibold text-white">{t("footer.quickLinks")}</h3>
           <ul className="space-y-2 text-sm text-navy-300">
-            <li><Link className="hover:text-teal-300" to="/services">Services</Link></li>
-            <li><Link className="hover:text-teal-300" to="/training">Training &amp; Internship</Link></li>
-            <li><Link className="hover:text-teal-300" to="/gallery">Gallery</Link></li>
-            <li><Link className="hover:text-teal-300" to="/contact">Contact</Link></li>
-            <li><Link className="hover:text-teal-300" to="/admin/login">Admin</Link></li>
+            <li><Link className="hover:text-teal-300" to="/services">{t("nav.services")}</Link></li>
+            <li><Link className="hover:text-teal-300" to="/training">{t("nav.training")}</Link></li>
+            <li><Link className="hover:text-teal-300" to="/gallery">{t("nav.gallery")}</Link></li>
+            <li><Link className="hover:text-teal-300" to="/contact">{t("nav.contact")}</Link></li>
+            <li><Link className="hover:text-teal-300" to="/admin/login">{t("nav.admin")}</Link></li>
           </ul>
         </div>
       </div>
       <div className="border-t border-navy-800 py-4 text-center text-xs text-navy-400">
-        © {year} {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"}. All rights reserved.
+        © {year} {settings?.businessName || "AUGU SMART ELECTRONIC SERVICE LTD"}. {t("footer.allRightsReserved")}
       </div>
     </footer>
   );

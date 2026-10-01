@@ -11,6 +11,7 @@ import About from "./pages/About";
 import Gallery from "./pages/Gallery";
 import Training from "./pages/Training";
 import Contact from "./pages/Contact";
+import TechnicalDocDetail from "./pages/TechnicalDocDetail";
 import NotFound from "./pages/NotFound";
 
 import AdminLogin from "./pages/admin/Login";
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/training" element={<Training />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/docs/:slug" element={<TechnicalDocDetail />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLogin />} />

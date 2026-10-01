@@ -14,11 +14,13 @@ import { colors } from "../theme/colors";
 import { endpoints } from "../api/endpoints";
 import { Button } from "../components/Common";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 import { Phone, MessageSquare, MapPin, Mail, Clock } from "lucide-react-native";
 
 export const ContactScreen = ({ route }: any) => {
   const preselectedService = route?.params?.preselectedService || "";
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -70,9 +72,9 @@ export const ContactScreen = ({ route }: any) => {
     >
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Contact & Service Booking</Text>
+          <Text style={styles.title}>{t.contact.title}</Text>
           <Text style={styles.subtitle}>
-            Have an urgent IT issue, printer repair, or CCTV consultation? Get in touch with our certified engineers.
+            {t.contact.subtitle}
           </Text>
         </View>
 
@@ -80,22 +82,22 @@ export const ContactScreen = ({ route }: any) => {
         <View style={styles.contactRow}>
           <Pressable style={styles.contactBox} onPress={callPhone}>
             <Phone size={20} color={colors.teal[600]} />
-            <Text style={styles.contactBoxTitle}>Call Us</Text>
+            <Text style={styles.contactBoxTitle}>{t.contact.callUs}</Text>
             <Text style={styles.contactBoxSubtitle}>+250 788 111 222</Text>
           </Pressable>
 
           <Pressable style={styles.contactBox} onPress={openWhatsApp}>
             <MessageSquare size={20} color={colors.teal[600]} />
             <Text style={styles.contactBoxTitle}>WhatsApp</Text>
-            <Text style={styles.contactBoxSubtitle}>Fast Reply</Text>
+            <Text style={styles.contactBoxSubtitle}>{t.contact.whatsapp}</Text>
           </Pressable>
         </View>
 
         {/* Form Container */}
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Send an Inquiry or Quote Request</Text>
+          <Text style={styles.formTitle}>{t.contact.sendInquiry}</Text>
 
-          <Text style={styles.label}>Your Name *</Text>
+          <Text style={styles.label}>{t.contact.name}</Text>
           <TextInput
             style={styles.input}
             value={name}
@@ -104,7 +106,7 @@ export const ContactScreen = ({ route }: any) => {
             placeholderTextColor={colors.text.muted}
           />
 
-          <Text style={styles.label}>Phone Number (WhatsApp preferred) *</Text>
+          <Text style={styles.label}>{t.contact.phone}</Text>
           <TextInput
             style={styles.input}
             value={phone}
@@ -114,7 +116,7 @@ export const ContactScreen = ({ route }: any) => {
             placeholderTextColor={colors.text.muted}
           />
 
-          <Text style={styles.label}>Email Address (Optional)</Text>
+          <Text style={styles.label}>{t.contact.email}</Text>
           <TextInput
             style={styles.input}
             value={email}
@@ -125,7 +127,7 @@ export const ContactScreen = ({ route }: any) => {
             placeholderTextColor={colors.text.muted}
           />
 
-          <Text style={styles.label}>Service Needed</Text>
+          <Text style={styles.label}>{t.contact.serviceNeeded}</Text>
           <TextInput
             style={styles.input}
             value={serviceInterest}
@@ -134,7 +136,7 @@ export const ContactScreen = ({ route }: any) => {
             placeholderTextColor={colors.text.muted}
           />
 
-          <Text style={styles.label}>Describe Issue / Requirements *</Text>
+          <Text style={styles.label}>{t.contact.message}</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={message}
@@ -147,7 +149,7 @@ export const ContactScreen = ({ route }: any) => {
 
           <View style={{ height: 16 }} />
           <Button
-            title="Submit Request"
+            title={t.contact.submit}
             onPress={handleSubmit}
             loading={submitting}
           />

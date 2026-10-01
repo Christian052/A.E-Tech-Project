@@ -10,6 +10,7 @@ import {
 import { colors } from "../theme/colors";
 import { endpoints } from "../api/endpoints";
 import { TrainingProgram } from "../types";
+import { useLanguage } from "../context/LanguageContext";
 import { Button } from "../components/Common";
 import {
   GraduationCap,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react-native";
 
 export const TrainingScreen = ({ navigation }: any) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [programs, setPrograms] = useState<TrainingProgram[]>([]);
@@ -43,7 +45,7 @@ export const TrainingScreen = ({ navigation }: any) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.teal[600]} />
-        <Text style={styles.loadingText}>Loading Vocational Training Programs...</Text>
+        <Text style={styles.loadingText}>{t.training.loading}</Text>
       </View>
     );
   }
@@ -65,9 +67,9 @@ export const TrainingScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Vocational IT Training & Internship</Text>
+            <Text style={styles.title}>{t.training.title}</Text>
             <Text style={styles.subtitle}>
-              Hands-on practical electronics & IT repair courses in Kigali. Gain real-world job readiness and guaranteed workshop internship.
+              {t.training.subtitle}
             </Text>
           </View>
         }
@@ -82,7 +84,7 @@ export const TrainingScreen = ({ navigation }: any) => {
                 {item.internshipIncluded && (
                   <View style={styles.internshipBadge}>
                     <CheckCircle2 size={12} color={colors.navy[900]} />
-                    <Text style={styles.internshipText}>Internship Included</Text>
+                    <Text style={styles.internshipText}>{t.training.internship}</Text>
                   </View>
                 )}
               </View>
@@ -107,7 +109,7 @@ export const TrainingScreen = ({ navigation }: any) => {
             )}
 
             <Button
-              title="Apply For Admission"
+              title={t.training.apply}
               onPress={() =>
                 navigation.navigate("TrainingApply", {
                   programId: item._id,

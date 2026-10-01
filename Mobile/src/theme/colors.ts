@@ -8,6 +8,7 @@ export const colors = {
     500: "#2D3748",
   },
   teal: {
+    700: "#0F766E",
     600: "#0D9488",
     500: "#14B8A6",
     400: "#2DD4BF",
@@ -18,6 +19,7 @@ export const colors = {
   amber: {
     500: "#F59E0B",
     400: "#FBBF24",
+    300: "#FCD34D",
     50: "#FFFBEB",
   },
   success: "#10B981",

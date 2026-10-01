@@ -5,12 +5,14 @@ import ServicesSection from "../components/ServicesSection";
 import TestimonialsSection from "../components/TestimonialsSection";
 import { mergeServicesWithDefaults } from "../utils/servicesData";
 import { useSettings } from "../hooks/useSettings";
+import { useLanguage } from "../context/LanguageContext";
 import ServiceQuoteSection from "../components/ServiceQuoteSection";
 
 const img = "/A.E TECH 001.jpg";
 
 export default function Home() {
   const { settings } = useSettings();
+  const { t } = useLanguage();
   const [services, setServices] = useState([]);
   const [status, setStatus] = useState("loading");
 
@@ -38,19 +40,17 @@ export default function Home() {
           <div className="lg:col-span-7">
             {/* Unboxed clean kicker metadata */}
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-400 mb-4">
-              <span>AUGU SMART ELECTRONIC SERVICE</span>
-              <span aria-hidden="true" className="text-teal-600">·</span>
-              <span>Kigali, Rwanda</span>
+              <span>{t("home.companySubtitle")}</span>
             </div>
 
             {/* Bold Heading */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold tracking-tight leading-[1.12] text-white">
-              Expert Computer Repair, CCTV Installation &amp; IT Training
+              {t("home.heroTitle")}
             </h1>
 
             {/* Brief Value Proposition */}
             <p className="mt-5 text-sm sm:text-base lg:text-lg text-slate-200 leading-relaxed max-w-xl">
-              From component-level computer and printer diagnostics to turnkey CCTV security installations and hands-on IT training, we deliver fast, guaranteed technology solutions with transparent quotes before any repair.
+              {t("home.heroSubtitle")}
             </p>
 
             {/* Service Pillars Checklist */}
@@ -59,19 +59,19 @@ export default function Home() {
                 <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Component-Level Computer Repair</span>
+                <span>{t("home.repairPillar")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Turnkey CCTV Surveillance</span>
+                <span>{t("home.cctvPillar")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <svg className="h-4 w-4 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Practical IT Internships</span>
+                <span>{t("home.trainingPillar")}</span>
               </div>
             </div>
 
@@ -82,7 +82,7 @@ export default function Home() {
                 href="#quote-section"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-400 hover:bg-teal-300 px-6 py-3.5 text-xs sm:text-sm font-bold text-slate-950 shadow-md transition-all duration-200 hover:shadow-teal-400/25 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-[#031B33]"
               >
-                <span>Request a Service Quote</span>
+                <span>{t("home.requestQuoteBtn")}</span>
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
@@ -93,7 +93,7 @@ export default function Home() {
                 href="#services"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 hover:bg-white/20 px-5 py-3.5 text-xs sm:text-sm font-semibold text-white backdrop-blur-xs transition-colors"
               >
-                Explore Offerings
+                {t("home.exploreOfferingsBtn")}
               </a>
 
               {/* Secondary CTA: Direct WhatsApp Contact */}
@@ -116,15 +116,15 @@ export default function Home() {
             {/* Quick Metrics Bar */}
             <div className="mt-10 grid grid-cols-3 gap-3 sm:gap-6 border-t border-white/10 pt-6">
               <div>
-                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Core Services</p>
-                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">{displayServices.length} Offerings</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">{t("home.coreServicesLabel")}</p>
+                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">{displayServices.length} {t("home.offeringsCount")}</p>
               </div>
               <div>
-                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Diagnostic Fee</p>
-                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">Free Quote</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">{t("home.diagnosticFeeLabel")}</p>
+                <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">{t("common.freeQuote")}</p>
               </div>
               <div>
-                <p className="text-[11px] sm:text-xs font-medium text-slate-400">Location</p>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-400">{t("home.locationLabel")}</p>
                 <p className="text-sm sm:text-xl font-extrabold text-white mt-0.5">Nyarugenge</p>
               </div>
             </div>
@@ -148,11 +148,11 @@ export default function Home() {
                 <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-[#031B33]/90 backdrop-blur-md border border-white/10 p-3.5 text-white shadow-lg">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Service Guarantee</p>
-                      <p className="text-xs font-semibold text-slate-100 mt-0.5">Quote before any repair · 100% genuine parts</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-teal-400">{t("home.serviceGuarantee")}</p>
+                      <p className="text-xs font-semibold text-slate-100 mt-0.5">{t("home.guaranteeText")}</p>
                     </div>
                     <span className="shrink-0 rounded-lg bg-teal-500/20 text-teal-300 border border-teal-400/30 px-2.5 py-1 text-[11px] font-bold">
-                      Verified
+                      {t("common.verified")}
                     </span>
                   </div>
                 </div>
@@ -170,8 +170,8 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">WORKING HOURS</p>
-              <p>{settings?.hours?.days || "Mon - Fri"} · {settings?.hours?.open || "10:00 AM"} – {settings?.hours?.close || "6:00 PM"}</p>
+              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">{t("common.workingHours")}</p>
+              <p>{t("home.hoursText")}</p>
             </div>
           </div>
 
@@ -180,8 +180,8 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             </svg>
             <div>
-              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">WORKSHOP</p>
-              <p>{settings?.address || "Norvege, Karama — Nyarugenge"}</p>
+              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">{t("common.workshop")}</p>
+              <p>{settings?.address || t("home.locationText")}</p>
             </div>
           </div>
 
@@ -190,8 +190,8 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">PROMISE</p>
-              <p>Quote before any repair</p>
+              <p className="font-semibold text-navy-900 uppercase tracking-wider text-[10px]">{t("common.promise")}</p>
+              <p>{t("home.promiseText")}</p>
             </div>
           </div>
         </div>
@@ -201,8 +201,8 @@ export default function Home() {
       <ServicesSection
         services={displayServices}
         loading={status === "loading"}
-        title="Company Offerings & Solutions"
-        subtitle="Professional computer repair, turnkey CCTV installation, and structured networking tailored for businesses, schools, and individuals in Kigali."
+        title={t("home.offeringsTitle")}
+        subtitle={t("home.offeringsSubtitle")}
       />
 
       {/* 4. CUSTOMER TESTIMONIALS SECTION */}
@@ -218,10 +218,10 @@ export default function Home() {
             {/* Left Content */}
             <div className="max-w-xl">
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Device down? Bring it in today.
+                {t("home.ctaTitle")}
               </h3>
               <p className="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                Free diagnostics, clear quote before we touch anything, and a repair timeline you can plan around.
+                {t("home.ctaSubtitle")}
               </p>
             </div>
 
@@ -250,7 +250,7 @@ export default function Home() {
                     d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                Request a repair
+                {t("home.requestRepairBtn")}
               </Link>
 
               {/* Call Us Button */}
@@ -258,7 +258,7 @@ export default function Home() {
                 href={`tel:${settings?.phone || "+250783432438"}`}
                 className="inline-flex items-center justify-center rounded-xl bg-white hover:bg-slate-100 px-6 py-3 text-xs font-bold text-slate-900 shadow transition-colors"
               >
-                Call us
+                {t("home.callUsBtn")}
               </a>
             </div>
           </div>

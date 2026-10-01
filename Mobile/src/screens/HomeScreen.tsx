@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -10,8 +10,8 @@ import {
   RefreshControl,
 } from "react-native";
 import { colors } from "../theme/colors";
-import { endpoints } from "../api/endpoints";
-import { Service, TrainingProgram, SiteSettings } from "../types";
+import { useSiteSettings, useServices, useTrainingPrograms } from "../hooks/useAppQueries";
+import { useLanguage } from "../context/LanguageContext";
 import { Button } from "../components/Common";
 import {
   Wrench,
@@ -22,40 +22,21 @@ import {
   ShieldCheck,
   CheckCircle2,
   MapPin,
-  Clock,
+  WifiOff,
 } from "lucide-react-native";
 
 export const HomeScreen = ({ navigation }: any) => {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [programs, setPrograms] = useState<TrainingProgram[]>([]);
+  const { t } = useLanguage();
+  const { data: settings, isError: settingsError, refetch: refetchSettings } = useSiteSettings();
+  const { data: allServices = [], isError: servicesError, refetch: refetchServices } = useServices();
+  const { data: allPrograms = [], isError: programsError, refetch: refetchPrograms } = useTrainingPrograms();
 
-  const fetchData = async () => {
-    try {
-      const [settRes, servRes, progRes] = await Promise.allSettled([
-        endpoints.getSettings(),
-        endpoints.getServices(),
-        endpoints.getTrainingPrograms(),
-      ]);
+  const services = allServices.slice(0, 4);
+  const programs = allPrograms.slice(0, 3);
+  const isAnyOffline = settingsError || servicesError || programsError;
 
-      if (settRes.status === "fulfilled") setSettings(settRes.value);
-      if (servRes.status === "fulfilled") setServices(servRes.value.slice(0, 4));
-      if (progRes.status === "fulfilled") setPrograms(progRes.value.slice(0, 3));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+  const onRefresh = async () => {
+    await Promise.allSettled([refetchSettings(), refetchServices(), refetchPrograms()]);
   };
 
   const openWhatsApp = () => {
@@ -69,38 +50,34 @@ export const HomeScreen = ({ navigation }: any) => {
     Linking.openURL(`tel:${rawNumber.replace(/\s+/g, "")}`);
   };
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.teal[600]} />
-        <Text style={styles.loadingText}>Loading AUGU Smart Electronic...</Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} />}
     >
       {/* Hero Banner */}
       <View style={styles.heroSection}>
+        {isAnyOffline && (
+          <View style={styles.offlineNotice}>
+            <WifiOff size={14} color={colors.amber[400]} />
+            <Text style={styles.offlineNoticeText}>{t.common.offlineNotice}</Text>
+          </View>
+        )}
+
         <View style={styles.badgeContainer}>
           <ShieldCheck size={14} color={colors.teal[400]} />
-          <Text style={styles.badgeText}>Kigali's Premier IT & Electronics Center</Text>
+          <Text style={styles.badgeText}>{t.home.badge}</Text>
         </View>
-        <Text style={styles.heroTitle}>AUGU SMART ELECTRONIC SERVICE</Text>
-        <Text style={styles.heroSubtitle}>
-          Professional Computer & Printer Repair, CCTV Installation, Networking, and Certified IT Training & Internships in Rwanda.
-        </Text>
+        <Text style={styles.heroTitle}>{t.home.heroTitle}</Text>
+        <Text style={styles.heroSubtitle}>{t.home.heroSubtitle}</Text>
 
         <View style={styles.heroActionRow}>
           <Pressable style={styles.actionButtonPrimary} onPress={() => navigation.navigate("ContactTab")}>
-            <Text style={styles.actionButtonPrimaryText}>Request Service</Text>
+            <Text style={styles.actionButtonPrimaryText}>{t.home.requestService}</Text>
           </Pressable>
           <Pressable style={styles.actionButtonSecondary} onPress={openWhatsApp}>
             <MessageSquare size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonSecondaryText}>WhatsApp</Text>
+            <Text style={styles.actionButtonSecondaryText}>{t.home.whatsapp}</Text>
           </Pressable>
         </View>
       </View>
@@ -123,14 +100,14 @@ export const HomeScreen = ({ navigation }: any) => {
       {/* Featured Services Section */}
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Our Core Services</Text>
-          <Text style={styles.sectionSubtitle}>Diagnostic, repair, and security solutions</Text>
+          <Text style={styles.sectionTitle}>{t.home.coreServices}</Text>
+          <Text style={styles.sectionSubtitle}>{t.home.coreServicesSubtitle}</Text>
         </View>
         <Pressable
           style={styles.seeAllButton}
           onPress={() => navigation.navigate("ServicesTab")}
         >
-          <Text style={styles.seeAllText}>View All</Text>
+          <Text style={styles.seeAllText}>{t.home.viewAll}</Text>
           <ChevronRight size={16} color={colors.teal[600]} />
         </Pressable>
       </View>
@@ -163,14 +140,14 @@ export const HomeScreen = ({ navigation }: any) => {
       {/* Training & Internship Preview */}
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>IT Training & Internship</Text>
-          <Text style={styles.sectionSubtitle}>Practical hardware and networking skills</Text>
+          <Text style={styles.sectionTitle}>{t.home.trainingTitle}</Text>
+          <Text style={styles.sectionSubtitle}>{t.home.trainingSubtitle}</Text>
         </View>
         <Pressable
           style={styles.seeAllButton}
           onPress={() => navigation.navigate("TrainingTab")}
         >
-          <Text style={styles.seeAllText}>Explore</Text>
+          <Text style={styles.seeAllText}>{t.home.explore}</Text>
           <ChevronRight size={16} color={colors.teal[600]} />
         </Pressable>
       </View>
@@ -186,7 +163,7 @@ export const HomeScreen = ({ navigation }: any) => {
               {program.internshipIncluded && (
                 <View style={styles.internshipBadge}>
                   <CheckCircle2 size={12} color={colors.navy[900]} />
-                  <Text style={styles.internshipBadgeText}>Internship Guaranteed</Text>
+                  <Text style={styles.internshipBadgeText}>{t.home.internshipGuaranteed}</Text>
                 </View>
               )}
             </View>
@@ -195,7 +172,7 @@ export const HomeScreen = ({ navigation }: any) => {
               {program.description}
             </Text>
             <Button
-              title="Apply Now"
+              title={t.home.applyNow}
               variant="outline"
               onPress={() => navigation.navigate("TrainingTab", { screen: "TrainingApply", params: { programId: program._id, programTitle: program.title } })}
             />
@@ -205,18 +182,18 @@ export const HomeScreen = ({ navigation }: any) => {
 
       {/* Why Choose Us */}
       <View style={styles.whyUsBox}>
-        <Text style={styles.whyUsTitle}>Why Choose AUGU SMART?</Text>
+        <Text style={styles.whyUsTitle}>{t.home.whyChooseUs}</Text>
         <View style={styles.whyRow}>
           <CheckCircle2 size={18} color={colors.teal[500]} />
-          <Text style={styles.whyText}>Certified Technicians with 10+ Years Experience</Text>
+          <Text style={styles.whyText}>{t.home.why1}</Text>
         </View>
         <View style={styles.whyRow}>
           <CheckCircle2 size={18} color={colors.teal[500]} />
-          <Text style={styles.whyText}>Genuine Parts & Clear Warranty on All Repairs</Text>
+          <Text style={styles.whyText}>{t.home.why2}</Text>
         </View>
         <View style={styles.whyRow}>
           <CheckCircle2 size={18} color={colors.teal[500]} />
-          <Text style={styles.whyText}>Hands-on practical training with guaranteed internship</Text>
+          <Text style={styles.whyText}>{t.home.why3}</Text>
         </View>
       </View>
 
@@ -230,22 +207,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
   heroSection: {
     backgroundColor: colors.navy[900],
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 28,
+  },
+  offlineNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(245, 158, 11, 0.2)",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.4)",
+  },
+  offlineNoticeText: {
+    color: colors.amber[400],
+    fontSize: 11,
+    fontWeight: "600",
   },
   badgeContainer: {
     flexDirection: "row",

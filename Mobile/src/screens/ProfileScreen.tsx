@@ -14,8 +14,11 @@ import {
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 import { endpoints } from "../api/endpoints";
+import { useUserProfile, useUpdateUserProfileMutation } from "../hooks/useAppQueries";
 import { Button } from "../components/Common";
+import { LanguageSwitcherModal } from "../components/LanguageSwitcherModal";
 import {
   User as UserIcon,
   Mail,
@@ -25,45 +28,45 @@ import {
   Lock,
   LogOut,
   RefreshCw,
+  Database,
+  WifiOff,
+  Globe,
 } from "lucide-react-native";
 
 export const ProfileScreen = ({ navigation }: any) => {
-  const { user, updateUserInContext, refreshUserProfile, logout } = useAuth();
+  const { user: authUser, updateUserInContext, logout } = useAuth();
   const { showToast } = useToast();
+  const { t, language } = useLanguage();
 
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const userId = authUser?._id || authUser?.id;
+
+  // React Query cached profile data with offline persistence
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+    isFetching,
+    refetch,
+  } = useUserProfile(userId, { enabled: !!userId });
+
+  const activeUser = profileData || authUser;
 
   // Edit fields
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [name, setName] = useState(activeUser?.name || "");
+  const [email, setEmail] = useState(activeUser?.email || "");
+  const updateProfileMutation = useUpdateUserProfileMutation();
 
   // Password reset fields
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const userId = user?._id || user?.id;
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      await refreshUserProfile();
-    } catch (e: any) {
-      showToast("Failed to refresh user profile.", "error");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
   useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
+    if (activeUser) {
+      setName(activeUser.name || "");
+      setEmail(activeUser.email || "");
     }
-  }, [user]);
+  }, [activeUser?.name, activeUser?.email]);
 
   const handleUpdateDetails = async () => {
     if (!name.trim() || !email.trim()) {
@@ -76,11 +79,13 @@ export const ProfileScreen = ({ navigation }: any) => {
       return;
     }
 
-    setSavingProfile(true);
     try {
-      const updated = await endpoints.updateUserProfile(userId, {
-        name: name.trim(),
-        email: email.trim(),
+      const updated = await updateProfileMutation.mutateAsync({
+        userId,
+        data: {
+          name: name.trim(),
+          email: email.trim(),
+        },
       });
 
       updateUserInContext({
@@ -88,15 +93,13 @@ export const ProfileScreen = ({ navigation }: any) => {
         email: updated.email || email.trim(),
       });
 
-      showToast("Profile details updated successfully!", "success");
+      showToast("Profile details updated and cached!", "success");
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.message ||
         "Failed to update profile";
       showToast(msg, "error");
-    } finally {
-      setSavingProfile(false);
     }
   };
 
@@ -106,7 +109,7 @@ export const ProfileScreen = ({ navigation }: any) => {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (!newPassword || newPassword !== confirmPassword) {
       showToast("Passwords do not match.", "error");
       return;
     }
@@ -148,11 +151,8 @@ export const ProfileScreen = ({ navigation }: any) => {
         style={styles.container}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              loadProfile();
-            }}
+            refreshing={isFetching}
+            onRefresh={() => refetch()}
           />
         }
       >
@@ -161,16 +161,38 @@ export const ProfileScreen = ({ navigation }: any) => {
           <View style={styles.avatarCircle}>
             <UserIcon size={36} color={colors.teal[600]} />
           </View>
-          <Text style={styles.userName}>{user?.name || "Staff Member"}</Text>
-          <Text style={styles.userEmail}>{user?.email}</Text>
+          <Text style={styles.userName}>{activeUser?.name || "Staff Member"}</Text>
+          <Text style={styles.userEmail}>{activeUser?.email}</Text>
 
           <View style={styles.roleBadge}>
             <Shield size={12} color={colors.navy[900]} />
-            <Text style={styles.roleText}>{user?.role?.toUpperCase() || "STAFF"}</Text>
+            <Text style={styles.roleText}>{activeUser?.role?.toUpperCase() || "STAFF"}</Text>
           </View>
         </View>
 
         <View style={styles.content}>
+          {isProfileError && (
+            <View style={styles.offlineBanner}>
+              <WifiOff size={16} color={colors.amber[500]} />
+              <Text style={styles.offlineBannerText}>
+                {t.common.offlineNotice}
+              </Text>
+            </View>
+          )}
+
+          {/* Preferences / Language Section */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Globe size={18} color={colors.teal[600]} />
+              <Text style={styles.cardTitle}>App Language / Ururimi</Text>
+            </View>
+
+            <View style={styles.langRow}>
+              <Text style={styles.langLabel}>{t.common.selectLanguage}</Text>
+              <LanguageSwitcherModal />
+            </View>
+          </View>
+
           {/* Account Details Form */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -206,7 +228,7 @@ export const ProfileScreen = ({ navigation }: any) => {
             <Button
               title="Save Profile Details"
               onPress={handleUpdateDetails}
-              loading={savingProfile}
+              loading={updateProfileMutation.isPending}
             />
           </View>
 
@@ -250,13 +272,13 @@ export const ProfileScreen = ({ navigation }: any) => {
             />
           </View>
 
-          {/* Secure Storage Info Banner */}
+          {/* Offline Cache & Security Info Banner */}
           <View style={styles.securityNote}>
-            <CheckCircle2 size={18} color={colors.teal[600]} />
+            <Database size={18} color={colors.teal[600]} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.securityNoteTitle}>Expo SecureStore Protected</Text>
+              <Text style={styles.securityNoteTitle}>Offline Cache Active (persistQueryClient)</Text>
               <Text style={styles.securityNoteDesc}>
-                Your JWT access and refresh tokens are encrypted in hardware-backed secure storage (iOS Keychain / Android Keystore) across device restarts.
+                Profile data and service requests are automatically persisted to device storage so you can review account details and service records anytime without internet connectivity.
               </Text>
             </View>
           </View>
@@ -294,12 +316,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.teal[50],
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: colors.teal[500],
   },
   userName: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#FFFFFF",
+    marginTop: 12,
   },
   userEmail: {
     fontSize: 13,
@@ -309,14 +333,12 @@ const styles = StyleSheet.create({
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.amber[50],
+    gap: 4,
+    backgroundColor: colors.teal[400],
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
+    paddingVertical: 3,
+    borderRadius: 12,
     marginTop: 10,
-    gap: 5,
-    borderWidth: 1,
-    borderColor: colors.amber[400],
   },
   roleText: {
     fontSize: 11,
@@ -326,6 +348,24 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.amber[50],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.amber[300],
+    marginBottom: 16,
+    gap: 8,
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    color: colors.navy[900],
+    fontWeight: "600",
+    flex: 1,
+  },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -334,16 +374,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingBottom: 10,
@@ -353,12 +393,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.navy[900],
   },
-  label: {
+  langRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  langLabel: {
     fontSize: 13,
     fontWeight: "600",
     color: colors.text.primary,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.text.secondary,
     marginBottom: 6,
-    marginTop: 10,
+    marginTop: 8,
   },
   inputContainer: {
     backgroundColor: colors.background,
@@ -368,7 +419,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   input: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     fontSize: 14,
     color: colors.text.primary,
   },
@@ -379,7 +430,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: "rgba(20, 184, 166, 0.3)",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   securityNoteTitle: {
@@ -390,7 +441,7 @@ const styles = StyleSheet.create({
   securityNoteDesc: {
     fontSize: 11,
     color: colors.text.secondary,
-    marginTop: 2,
+    marginTop: 3,
     lineHeight: 16,
   },
 });

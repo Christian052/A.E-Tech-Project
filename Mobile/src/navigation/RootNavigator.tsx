@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 // Screens
 import { HomeScreen } from "../screens/HomeScreen";
@@ -17,6 +18,11 @@ import { ContactScreen } from "../screens/ContactScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { AdminDashboardScreen } from "../screens/AdminDashboardScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
+import { TechnicalDocDetailScreen } from "../screens/TechnicalDocDetailScreen";
+
+// Global Search & Language Modals
+import { GlobalSearchModal } from "../components/GlobalSearchModal";
+import { LanguageSwitcherModal } from "../components/LanguageSwitcherModal";
 
 // Icons
 import {
@@ -27,13 +33,14 @@ import {
   Phone,
   ShieldCheck,
   User as UserIcon,
+  Search,
 } from "lucide-react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // Services Stack
-const ServicesStack = () => (
+const ServicesStack = ({ onOpenSearch }: { onOpenSearch: () => void }) => (
   <Stack.Navigator
     screenOptions={{
       headerStyle: { backgroundColor: colors.navy[900] },
@@ -44,7 +51,17 @@ const ServicesStack = () => (
     <Stack.Screen
       name="ServicesList"
       component={ServicesScreen}
-      options={{ title: "Services" }}
+      options={{
+        title: "Services",
+        headerRight: () => (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginRight: 16 }}>
+            <LanguageSwitcherModal />
+            <Pressable onPress={onOpenSearch} hitSlop={8}>
+              <Search size={20} color={colors.teal[400]} />
+            </Pressable>
+          </View>
+        ),
+      }}
     />
     <Stack.Screen
       name="ServiceDetail"
@@ -55,7 +72,7 @@ const ServicesStack = () => (
 );
 
 // Training Stack
-const TrainingStack = () => (
+const TrainingStack = ({ onOpenSearch }: { onOpenSearch: () => void }) => (
   <Stack.Navigator
     screenOptions={{
       headerStyle: { backgroundColor: colors.navy[900] },
@@ -66,7 +83,17 @@ const TrainingStack = () => (
     <Stack.Screen
       name="TrainingList"
       component={TrainingScreen}
-      options={{ title: "Training Programs" }}
+      options={{
+        title: "Training Programs",
+        headerRight: () => (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginRight: 16 }}>
+            <LanguageSwitcherModal />
+            <Pressable onPress={onOpenSearch} hitSlop={8}>
+              <Search size={20} color={colors.teal[400]} />
+            </Pressable>
+          </View>
+        ),
+      }}
     />
     <Stack.Screen
       name="TrainingApply"
@@ -79,9 +106,15 @@ const TrainingStack = () => (
 // Main Bottom Tab Navigator
 export const RootNavigator = () => {
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
+  const [searchVisible, setSearchVisible] = useState(false);
+  const navigationRef = React.useRef<any>(null);
+
+  const openSearch = () => setSearchVisible(true);
+  const closeSearch = () => setSearchVisible(false);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Tab.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.navy[900] },
@@ -106,20 +139,26 @@ export const RootNavigator = () => {
           name="HomeTab"
           component={HomeScreen}
           options={({ navigation }) => ({
-            title: "Home",
+            title: t.tabs.home,
             headerTitle: "AUGU SMART ELECTRONIC",
             headerRight: () => (
-              <Pressable
-                onPress={() =>
-                  navigation.navigate(isAuthenticated ? "AdminDashboard" : "Login")
-                }
-                style={{ marginRight: 16 }}
-              >
-                <ShieldCheck
-                  size={22}
-                  color={isAuthenticated ? colors.teal[400] : "#FFFFFF"}
-                />
-              </Pressable>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginRight: 16 }}>
+                <LanguageSwitcherModal />
+                <Pressable onPress={openSearch} hitSlop={8}>
+                  <Search size={20} color={colors.teal[400]} />
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate(isAuthenticated ? "AdminDashboard" : "Login")
+                  }
+                  hitSlop={8}
+                >
+                  <ShieldCheck
+                    size={22}
+                    color={isAuthenticated ? colors.teal[400] : "#FFFFFF"}
+                  />
+                </Pressable>
+              </View>
             ),
             tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
           })}
@@ -127,32 +166,42 @@ export const RootNavigator = () => {
 
         <Tab.Screen
           name="ServicesTab"
-          component={ServicesStack}
           options={{
             headerShown: false,
-            title: "Services",
+            title: t.tabs.services,
             tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} />,
           }}
-        />
+        >
+          {() => <ServicesStack onOpenSearch={openSearch} />}
+        </Tab.Screen>
 
         <Tab.Screen
           name="TrainingTab"
-          component={TrainingStack}
           options={{
             headerShown: false,
-            title: "Training",
+            title: t.tabs.training,
             tabBarIcon: ({ color, size }) => (
               <GraduationCap size={size} color={color} />
             ),
           }}
-        />
+        >
+          {() => <TrainingStack onOpenSearch={openSearch} />}
+        </Tab.Screen>
 
         <Tab.Screen
           name="GalleryTab"
           component={GalleryScreen}
           options={{
-            title: "Gallery",
+            title: t.tabs.gallery,
             headerTitle: "Workshop Projects",
+            headerRight: () => (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginRight: 16 }}>
+                <LanguageSwitcherModal />
+                <Pressable onPress={openSearch} hitSlop={8}>
+                  <Search size={20} color={colors.teal[400]} />
+                </Pressable>
+              </View>
+            ),
             tabBarIcon: ({ color, size }) => (
               <ImageIcon size={size} color={color} />
             ),
@@ -163,8 +212,13 @@ export const RootNavigator = () => {
           name="ContactTab"
           component={ContactScreen}
           options={{
-            title: "Contact",
-            headerTitle: "Get in Touch",
+            title: t.tabs.contact,
+            headerTitle: t.contact.title,
+            headerRight: () => (
+              <View style={{ marginRight: 16 }}>
+                <LanguageSwitcherModal />
+              </View>
+            ),
             tabBarIcon: ({ color, size }) => <Phone size={size} color={color} />,
           }}
         />
@@ -205,7 +259,25 @@ export const RootNavigator = () => {
             headerTitle: "Account & Profile",
           }}
         />
+
+        {/* Technical Documentation Viewer Screen */}
+        <Tab.Screen
+          name="TechnicalDocDetail"
+          component={TechnicalDocDetailScreen}
+          options={{
+            tabBarButton: () => null,
+            title: "Technical Document",
+            headerTitle: "Hardware Knowledge Base",
+          }}
+        />
       </Tab.Navigator>
+
+      {/* Global Search Modal for Mobile App */}
+      <GlobalSearchModal
+        visible={searchVisible}
+        onClose={closeSearch}
+        navigation={navigationRef.current}
+      />
     </NavigationContainer>
   );
 };

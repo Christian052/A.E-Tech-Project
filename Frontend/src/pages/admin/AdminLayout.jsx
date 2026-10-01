@@ -11,24 +11,25 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import img from "../../../public/A.E TECH 002.png";
-
-const baseNavItems = [
-  { key: "Overview", label: "Overview", icon: LayoutDashboard },
-  { key: "Inquiries", label: "Inquiries", icon: Inbox, badgeKey: "inquiries" },
-  { key: "Applications", label: "Applications", icon: GraduationCap, badgeKey: "applications" },
-  { key: "Services", label: "Services", icon: Wrench },
-  { key: "Gallery", label: "Gallery", icon: ImageIcon },
-  { key: "Training", label: "Training", icon: GraduationCap },
-  { key: "Users", label: "Users", icon: Users }, // 👈 Added for Admins
-];
 
 export default function AdminLayout({ tab, setTab, badges = {}, children }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // navItems is now unified so regular admins see the Users tab
-  const navItems = baseNavItems;
+  const navItems = [
+    { key: "Overview", label: t("dashboard.overview"), icon: LayoutDashboard },
+    { key: "Inquiries", label: t("dashboard.inquiries"), icon: Inbox, badgeKey: "inquiries" },
+    { key: "Applications", label: t("dashboard.applications"), icon: GraduationCap, badgeKey: "applications" },
+    { key: "Services", label: t("dashboard.services"), icon: Wrench },
+    { key: "Gallery", label: t("dashboard.gallery"), icon: ImageIcon },
+    { key: "Training", label: t("dashboard.training"), icon: GraduationCap },
+    { key: "Users", label: t("dashboard.users"), icon: Users },
+  ];
+
   const activeItem = navItems.find((n) => n.key === tab);
 
   const NavList = ({ onNavigate }) => (
@@ -43,7 +44,7 @@ export default function AdminLayout({ tab, setTab, badges = {}, children }) {
               setTab(key);
               onNavigate?.();
             }}
-            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition cursor-pointer ${
               active ? "bg-teal-500/15 text-teal-300" : "text-navy-300 hover:bg-white/5 hover:text-white"
             }`}
           >
@@ -68,20 +69,20 @@ export default function AdminLayout({ tab, setTab, badges = {}, children }) {
           <img className="grid h-9 w-9 place-items-center rounded-lg bg-navy-800 text-sm text-teal-300" src={img} alt="logo" />
           <div>
             <p className="text-sm font-bold leading-tight">AUGU Admin</p>
-            <p className="text-xs text-navy-400">Operations Console</p>
+            <p className="text-xs text-navy-400">{t("dashboard.operationsConsole")}</p>
           </div>
         </div>
         <NavList />
         <div className="border-t border-white/10 p-3">
           <div className="mb-2 px-2 text-xs text-navy-400">
-            Signed in as <span className="text-navy-200">{user?.name}</span> ({user?.role})
+            {t("dashboard.signedInAs", { name: user?.name || "Admin", role: user?.role || "Staff" })}
           </div>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-navy-300 hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-navy-300 hover:bg-white/5 hover:text-white cursor-pointer"
           >
             <LogOut size={18} />
-            Log Out
+            {t("auth.logout")}
           </button>
         </div>
       </aside>
@@ -107,7 +108,7 @@ export default function AdminLayout({ tab, setTab, badges = {}, children }) {
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-navy-300 hover:bg-white/5 hover:text-white"
               >
                 <LogOut size={18} />
-                Log Out
+                {t("auth.logout")}
               </button>
             </div>
           </aside>
@@ -116,17 +117,24 @@ export default function AdminLayout({ tab, setTab, badges = {}, children }) {
 
       {/* Main column */}
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-navy-100 bg-white px-4 py-4 sm:px-6">
-          <button
-            onClick={() => setMobileNavOpen(true)}
-            aria-label="Open menu"
-            className="grid h-9 w-9 place-items-center rounded-lg border border-navy-200 text-navy-600 lg:hidden"
-          >
-            <Menu size={18} />
-          </button>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-navy-400">Admin Console</p>
-            <h1 className="text-lg font-bold text-navy-800">{activeItem?.label || tab}</h1>
+        <header className="flex items-center justify-between border-b border-navy-100 bg-white px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open menu"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-navy-200 text-navy-600 lg:hidden"
+            >
+              <Menu size={18} />
+            </button>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-navy-400">{t("dashboard.operationsConsole")}</p>
+              <h1 className="text-lg font-bold text-navy-800">{activeItem?.label || tab}</h1>
+            </div>
+          </div>
+
+          {/* Language Switcher in Admin Header */}
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
           </div>
         </header>
 

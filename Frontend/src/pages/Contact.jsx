@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { useSettings } from "../hooks/useSettings";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -16,7 +17,7 @@ const contactSchema = z.object({
 });
 
 const defaultServiceOptions = [
-  { value: "", label: "General inquiry" },
+  { value: "", labelKey: "contact.generalInquiry" },
   { value: "computer-repair", label: "Computer Repair & Maintenance" },
   { value: "printer-photocopier-repair", label: "Printer/Photocopier Repair" },
   { value: "networking-internet", label: "Networking & Internet" },
@@ -27,6 +28,7 @@ const defaultServiceOptions = [
 
 export default function Contact() {
   const { settings } = useSettings();
+  const { t } = useLanguage();
   const [result, setResult] = useState(null);
   const [dbServices, setDbServices] = useState([]);
 
@@ -44,13 +46,16 @@ export default function Contact() {
   const serviceOptions =
     dbServices.length > 0
       ? [
-          { value: "", label: "General inquiry" },
+          { value: "", label: t("contact.generalInquiry") },
           ...dbServices.map((s) => ({
             value: s.slug || s.name,
             label: s.name,
           })),
         ]
-      : defaultServiceOptions;
+      : defaultServiceOptions.map(opt => ({
+          value: opt.value,
+          label: opt.labelKey ? t(opt.labelKey) : opt.label
+        }));
 
   const {
     register,
@@ -74,12 +79,10 @@ export default function Contact() {
     setResult(null);
     try {
       const { data } = await api.post("/contact", values);
-      const successMessage =
-        data.message ||
-        "Thank you! Your message has been sent successfully. We will contact you within 24 hours.";
+      const successMessage = data.message || t("contact.successSent");
       setResult({ type: "success", message: successMessage });
       toast.success(successMessage, {
-        title: "Message Sent Successfully",
+        title: t("common.confirm"),
         duration: 5000,
       });
       reset();
@@ -87,10 +90,10 @@ export default function Contact() {
       const errorMsg =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.message ||
-        "Something went wrong while sending your message. Please try again.";
+        t("common.errorOccurred");
       setResult({ type: "error", message: errorMsg });
       toast.error(errorMsg, {
-        title: "Submission Error",
+        title: t("common.status"),
         duration: 5000,
       });
     }
@@ -112,13 +115,13 @@ export default function Contact() {
       <div className="bg-gradient-to-r from-[#031B33] via-[#032B45] to-[#004B5B] text-white pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-6 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto">
           <span className="text-[11px] font-bold tracking-widest uppercase text-teal-400 block mb-2 sm:mb-3">
-            CONTACT US
+            {t("contact.badge")}
           </span>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4">
-            Talk to a technician today
+            {t("contact.title")}
           </h1>
           <p className="text-slate-300 text-xs sm:text-base font-normal max-w-2xl leading-relaxed">
-            Call, WhatsApp or send us the details of your problem. We reply during working hours, Monday to Friday.
+            {t("contact.subtitle")}
           </p>
         </div>
       </div>
@@ -130,7 +133,7 @@ export default function Contact() {
           {/* Left Column (Direct Lines & Map) */}
           <div className="lg:col-span-5 space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-bold text-slate-900 mb-2">Direct lines</h2>
+              <h2 className="text-base font-bold text-slate-900 mb-2">{t("contact.directLines")}</h2>
               <ul className="space-y-3.5 text-xs md:text-sm text-slate-600">
                 <li className="flex items-center gap-3">
                   <span className="text-teal-500 font-bold">📞</span>
@@ -159,7 +162,7 @@ export default function Contact() {
                 <li className="flex items-center gap-3">
                   <span className="text-teal-500 font-bold">🕒</span>
                   <span className="text-slate-600">
-                    {settings?.hours?.days || "Mon - Fri"}: {settings?.hours?.open || "10:00 AM"} – {settings?.hours?.close || "6:00 PM"}
+                    {t("common.workingHours")}: {settings?.hours?.days || "Mon - Fri"}: {settings?.hours?.open || "10:00 AM"} – {settings?.hours?.close || "6:00 PM"}
                   </span>
                 </li>
               </ul>
@@ -179,9 +182,9 @@ export default function Contact() {
           {/* Right Column (Message Form) */}
           <div className="lg:col-span-7">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900">Send a message</h2>
+              <h2 className="text-lg font-bold text-slate-900">{t("contact.sendMessage")}</h2>
               <p className="text-xs text-slate-500 mb-6 mt-1">
-                Submit your inquiry directly to our system or connect via WhatsApp.
+                {t("contact.formSubtitle")}
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -198,7 +201,7 @@ export default function Contact() {
                 {/* Name */}
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    NAME
+                    {t("contact.nameLabel")}
                   </label>
                   <input
                     className="input-field"
@@ -212,7 +215,7 @@ export default function Contact() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                      PHONE
+                      {t("contact.phoneLabel")}
                     </label>
                     <input
                       className="input-field"
@@ -223,7 +226,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                      EMAIL (OPTIONAL)
+                      {t("contact.emailLabel")}
                     </label>
                     <input
                       className="input-field"
@@ -237,7 +240,7 @@ export default function Contact() {
                 {/* Service Dropdown */}
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    SERVICE INTEREST
+                    {t("contact.serviceInterestLabel")}
                   </label>
                   <select
                     className="input-field cursor-pointer"
@@ -255,12 +258,12 @@ export default function Contact() {
                 {/* Message */}
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
-                    MESSAGE / QUOTE DETAILS
+                    {t("contact.messageLabel")}
                   </label>
                   <textarea
                     rows={4}
                     className="input-field resize-y"
-                    placeholder="Tell us about the issue with your device or installation requirements..."
+                    placeholder={t("contact.messagePlaceholder")}
                     {...register("message")}
                   />
                   {errors.message && <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>}
@@ -272,16 +275,16 @@ export default function Contact() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#032B45] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#021E31] transition-colors disabled:opacity-60"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#032B45] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#021E31] transition-colors disabled:opacity-60 cursor-pointer"
                   >
-                    {isSubmitting ? "Submitting..." : "📤 Send Message"}
+                    {isSubmitting ? t("common.submitting") : t("contact.sendMessageBtn")}
                   </button>
 
                   {/* Secondary WhatsApp Button */}
                   <button
                     type="button"
                     onClick={handleWhatsAppSend}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-teal-600 transition-colors"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-teal-600 transition-colors cursor-pointer"
                   >
                     💬 WhatsApp
                   </button>
